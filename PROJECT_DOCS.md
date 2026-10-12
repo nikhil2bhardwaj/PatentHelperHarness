@@ -214,14 +214,14 @@ run_harness.py (CLI entry point)
 
 ---
 
-## Web App (Phase 2)
+## Web App Architecture
 
-The core logic (`prompt_loader`, `api_client`, `workflow`, `output_store`) is reused as a FastAPI backend. A React + TailwindCSS frontend replaces the terminal UI with:
+The core logic (`prompt_loader`, `api_client`, `output_store`) powers a FastAPI backend (`web/backend/main.py`) and a React + Vite frontend (`web/frontend/`):
 
-- Phase timeline sidebar
-- Output viewer with JSON rendering
-- Inline editor for gate edits
-- Feedback input box
-- Session history
+- **Interactive Workspace:** 13-phase stepper, live progress indicator, and docked review gate (Accept, Edit, Feedback, Rerun, Cumulative, Save & Exit).
+- **Document View Formatting:** Publication-quality document rendering (`ReadableOutput.jsx`) with color-coded claim trees, executive summaries, and novelty matrices.
+- **Publication Exports:** 1-click downloads for individual phases and the full cumulative dossier in `.pdf`, `.docx`, and `.md` formats.
+- **Provider & Key Management:** In-UI API key entry with password toggle for OpenAI, Anthropic Claude, Google Gemini, and custom local endpoints (Ollama, vLLM, DeepSeek).
+- **Session Checkpointing & Resume:** Auto-saves checkpoints with full audit trail in `outputs/`.
 
-See `web/` directory for the web application.
+For complete setup guides and API schemas, see [WEB_APP_DOCS.md](WEB_APP_DOCS.md) and [documentation.html](documentation.html).
