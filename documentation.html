@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Helper Harness — Technical Documentation</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-code: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #e8743b;
+    --accent-dim: rgba(232,116,59,0.15);
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  header {
+    background: linear-gradient(135deg, #1a1d23 0%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 24px 40px;
+    text-align: center;
+  }
+  header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  header h1 span { color: var(--accent); }
+  header p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+  }
+  nav {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  nav a:hover { color: var(--accent); }
+  section {
+    margin-top: 48px;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  h2 .num {
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 28px 0 12px;
+    color: var(--text);
+  }
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 20px 0 8px;
+    color: var(--accent);
+  }
+  p { margin-bottom: 12px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 6px; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.88rem;
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--blue);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: var(--text);
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .card-accent {
+    border-left: 3px solid var(--accent);
+  }
+  .card-green {
+    border-left: 3px solid var(--green);
+  }
+  .card-yellow {
+    border-left: 3px solid var(--yellow);
+  }
+  .card-red {
+    border-left: 3px solid var(--red);
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .badge-accent { background: var(--accent-dim); color: var(--accent); }
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-blue { background: rgba(88,166,255,0.15); color: var(--blue); }
+  .badge-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 0.88rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--bg-card);
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td code { font-size: 0.82rem; }
+  .tree {
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: var(--text-muted);
+  }
+  .tree .dir { color: var(--accent); font-weight: 600; }
+  .tree .file { color: var(--text); }
+  .tree .desc { color: var(--text-muted); }
+  .note {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin: 12px 0;
+    font-size: 0.9rem;
+  }
+  .note-info {
+    background: rgba(88,166,255,0.08);
+    border: 1px solid rgba(88,166,255,0.2);
+    color: var(--blue);
+  }
+  .note-warn {
+    background: rgba(210,153,34,0.08);
+    border: 1px solid rgba(210,153,34,0.2);
+    color: var(--yellow);
+  }
+  .note-danger {
+    background: rgba(248,81,73,0.08);
+    border: 1px solid rgba(248,81,73,0.2);
+    color: var(--red);
+  }
+  .phase-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .phase-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .phase-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .phase-item span { font-size: 0.85rem; font-weight: 500; }
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .flow-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  .flow-arrow { color: var(--text-muted); font-size: 1.2rem; }
+  .flow-box.accent { border-color: var(--accent); color: var(--accent); }
+  .flow-box.green { border-color: var(--green); color: var(--green); }
+  .flow-box.blue { border-color: var(--blue); color: var(--blue); }
+  footer {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+  @media (max-width: 768px) {
+    .grid, .phase-list { grid-template-columns: 1fr; }
+    header h1 { font-size: 1.6rem; }
+    nav ul { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Patent Helper <span>Harness</span></h1>
+  <p>Automotive R&amp;D Patent Ideation Pipeline — Technical Documentation</p>
+</header>
+
+<nav>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#structure">Project Structure</a></li>
+    <li><a href="#phases">13-Phase Pipeline</a></li>
+    <li><a href="#backend">Backend API</a></li>
+    <li><a href="#frontend">Frontend</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#config">Configuration</a></li>
+    <li><a href="#start">Start &amp; Stop Server</a></li>
+    <li><a href="#cli">CLI Mode</a></li>
+  </ul>
+</nav>
+
+<div class="container">
+
+<!-- ==================== OVERVIEW ==================== -->
+<section id="overview">
+  <h2><span class="num">01</span>Overview</h2>
+  <p>
+    <strong>Patent Helper Harness</strong> is an AI-powered, multi-phase ideation pipeline designed for automotive R&amp;D patent discovery.
+    It chains 13 LLM-driven phases — from initial user intent capture through research, idea generation, prior-art analysis, feasibility,
+    risk review, and final patent disclosure drafting — with human-in-the-loop gates between each phase.
+  </p>
+  <p>
+    The system supports three LLM providers (<span class="badge badge-green">Groq</span> <span class="badge badge-blue">OpenAI</span> <span class="badge badge-purple">Nararouter</span>),
+    a mock mode for testing without API keys, and both a <strong>web UI</strong> (React + FastAPI) and a <strong>CLI</strong> interface.
+  </p>
+
+  <div class="card card-accent">
+    <h4>Key Capabilities</h4>
+    <ul>
+      <li><strong>13-phase sequential pipeline</strong> with LLM-generated JSON output at each phase</li>
+      <li><strong>Human-in-the-loop gates</strong>: Accept, Edit, Feedback, Rerun, Save &amp; Exit</li>
+      <li><strong>Autonomous mode</strong>: Auto-accept and chain all phases without manual review</li>
+      <li><strong>Save &amp; Resume</strong>: Sessions auto-save after every gate action; resume from any saved session</li>
+      <li><strong>Phase output referencing</strong>: Select completed phase outputs to inject as additional context into the next phase run</li>
+      <li><strong>Export</strong>: Download any phase output as <code>.md</code>, <code>.pdf</code>, or <code>.docx</code></li>
+      <li><strong>Output compression</strong>: Token-aware truncation to fit context windows when passing outputs between phases</li>
+      <li><strong>Multi-provider support</strong>: Groq, OpenAI, Nararouter, or Mock (no API key needed)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== ARCHITECTURE ==================== -->
+<section id="architecture">
+  <h2><span class="num">02</span>Architecture</h2>
+
+  <div class="flow-diagram">
+    <div class="flow-box accent">User Input</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box">Prompt Loader</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box">Variable Substitution</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box accent">API Client (LLM)</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box">Output Store</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box green">Gate (Human Review)</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-box blue">Next Phase</div>
+  </div>
+
+  <h3>High-Level Flow</h3>
+  <ol>
+    <li>User provides an initial input (or leaves empty for Autonomous mode)</li>
+    <li>For each phase (0–12), the system loads a prompt template from <code>Innovation Prompts/</code></li>
+    <li>Template variables (<code>{{USER_INPUT}}</code>, <code>{{PHASE_N_OUTPUT}}</code>, etc.) are substituted with real values</li>
+    <li>The assembled prompt + system prompt are sent to the LLM via the selected provider</li>
+    <li>The LLM returns structured JSON output</li>
+    <li>Output is saved to disk and displayed to the user</li>
+    <li>The user reviews via a <strong>gate</strong>: Accept, Edit, Feedback, Rerun, or Save &amp; Exit</li>
+    <li>On accept, the output becomes input context for the next phase (compressed if needed)</li>
+  </ol>
+
+  <h3>Two Interfaces</h3>
+  <div class="grid">
+    <div class="card">
+      <h4>Web App (FastAPI + React)</h4>
+      <ul>
+        <li><strong>Backend</strong>: <code>web/backend/main.py</code> — FastAPI server with REST endpoints</li>
+        <li><strong>Frontend</strong>: <code>web/frontend/</code> — React + TailwindCSS SPA</li>
+        <li>Runs on <code>http://127.0.0.1:8000</code></li>
+        <li>Full UI with sidebar, gate panel, modals, export buttons</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>CLI (<code>run_harness.py</code>)</h4>
+      <ul>
+        <li>Terminal-based interactive workflow</li>
+        <li>Rich-formatted console output</li>
+        <li>Gate options via numbered menu (1–6)</li>
+        <li>Supports <code>--resume</code>, <code>--mock</code>, <code>--provider</code> flags</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Core Modules</h3>
+  <table>
+    <thead>
+      <tr><th>Module</th><th>Path</th><th>Responsibility</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>config.py</code></td>
+        <td><code>harness/config.py</code></td>
+        <td>Loads <code>.env</code>, defines phase names, prompt file mappings, API keys, compression settings</td>
+      </tr>
+      <tr>
+        <td><code>api_client.py</code></td>
+        <td><code>harness/api_client.py</code></td>
+        <td>OpenAI-compatible client supporting Groq, OpenAI, Nararouter; handles retries with exponential backoff</td>
+      </tr>
+      <tr>
+        <td><code>mock_client.py</code></td>
+        <td><code>harness/mock_client.py</code></td>
+        <td>Simulated API client for testing without API keys; returns phase-appropriate mock JSON</td>
+      </tr>
+      <tr>
+        <td><code>prompt_loader.py</code></td>
+        <td><code>harness/prompt_loader.py</code></td>
+        <td>Loads prompt templates from <code>Innovation Prompts/</code>, extracts <code>{{VARIABLES}}</code>, transforms for JSON output mode</td>
+      </tr>
+      <tr>
+        <td><code>output_store.py</code></td>
+        <td><code>harness/output_store.py</code></td>
+        <td>Manages session directories, saves/loads phase outputs, feedback, session state; rebuilds cumulative output files</td>
+      </tr>
+      <tr>
+        <td><code>utils.py</code></td>
+        <td><code>harness/utils.py</code></td>
+        <td>Token counting (tiktoken), output compression/truncation, historical &amp; cumulative context builders, editor helper</td>
+      </tr>
+      <tr>
+        <td><code>workflow.py</code></td>
+        <td><code>harness/workflow.py</code></td>
+        <td>CLI workflow orchestrator — runs phases sequentially, handles gate interactions, saves state</td>
+      </tr>
+      <tr>
+        <td><code>main.py</code></td>
+        <td><code>web/backend/main.py</code></td>
+        <td>FastAPI web server — REST API endpoints for session management, phase execution, gates, export, save/resume</td>
+      </tr>
+      <tr>
+        <td><code>App.jsx</code></td>
+        <td><code>web/frontend/src/App.jsx</code></td>
+        <td>React SPA — start screen, phase sidebar, output viewer, gate panel, export buttons, reference selector, resume modal</td>
+      </tr>
+      <tr>
+        <td><code>ReadableOutput.jsx</code></td>
+        <td><code>web/frontend/src/ReadableOutput.jsx</code></td>
+        <td>Renders parsed JSON output as formatted, human-readable sections with color-coded categories</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== PROJECT STRUCTURE ==================== -->
+<section id="structure">
+  <h2><span class="num">03</span>Project Structure</h2>
+
+  <pre class="tree"><span class="dir">Harness/</span>
+├── <span class="file">.env</span>                          <span class="desc"># API keys &amp; config (gitignored)</span>
+├── <span class="file">.env.example</span>                   <span class="desc"># Template for .env</span>
+├── <span class="file">requirements.txt</span>               <span class="desc"># Python dependencies</span>
+├── <span class="file">run_harness.py</span>                 <span class="desc"># CLI entry point</span>
+├── <span class="file">documentation.html</span>             <span class="desc"># This file</span>
+│
+├── <span class="dir">harness/</span>                        <span class="desc"># Core engine package</span>
+│   ├── <span class="file">config.py</span>                   <span class="desc"># Configuration &amp; env loading</span>
+│   ├── <span class="file">api_client.py</span>               <span class="desc"># LLM API client (Groq/OpenAI/Nararouter)</span>
+│   ├── <span class="file">mock_client.py</span>              <span class="desc"># Mock API client for testing</span>
+│   ├── <span class="file">prompt_loader.py</span>            <span class="desc"># Prompt template loading &amp; variable substitution</span>
+│   ├── <span class="file">output_store.py</span>             <span class="desc"># Session persistence (phase outputs, state, feedback)</span>
+│   ├── <span class="file">utils.py</span>                    <span class="desc"># Token counting, compression, context builders</span>
+│   └── <span class="file">workflow.py</span>                  <span class="desc"># CLI workflow orchestrator</span>
+│
+├── <span class="dir">Innovation Prompts/</span>             <span class="desc"># Prompt templates (13 phases + system prompt)</span>
+│   ├── <span class="file">1. SystemPrompt.txt</span>         <span class="desc"># System prompt sent with every API call</span>
+│   ├── <span class="file">Prompt 0.md</span>                 <span class="desc"># Phase 0: User Intent &amp; Scope Setup</span>
+│   ├── <span class="file">Prompt 1.txt</span>                <span class="desc"># Phase 1: Research</span>
+│   ├── <span class="file">...</span>                        <span class="desc"># Phases 2–11</span>
+│   └── <span class="file">Prompt 12.txt</span>               <span class="desc"># Phase 12: Final Recommendation</span>
+│
+├── <span class="dir">outputs/</span>                        <span class="desc"># Session output directories (auto-created)</span>
+│   └── <span class="dir">session_YYYYMMDD_HHMMSS/</span>    <span class="desc"># One per session</span>
+│       ├── <span class="file">session_state.json</span>      <span class="desc"># Session metadata (phase, model, provider, etc.)</span>
+│       ├── <span class="file">phase_0_output.md</span>       <span class="desc"># Raw LLM output for phase 0</span>
+│       ├── <span class="file">phase_0_edited.md</span>       <span class="desc"># Edited version (if user edited)</span>
+│       ├── <span class="file">phase_0_feedback.txt</span>    <span class="desc"># Feedback for next phase (if provided)</span>
+│       ├── <span class="file">...</span>                    <span class="desc"># Phases 1–12</span>
+│       └── <span class="file">all_phases_output.json</span>  <span class="desc"># Cumulative output with line-number index</span>
+│
+├── <span class="dir">web/</span>                            <span class="desc"># Web application</span>
+│   ├── <span class="dir">backend/</span>                    <span class="desc"># FastAPI server</span>
+│   │   ├── <span class="file">main.py</span>                 <span class="desc"># All REST API endpoints</span>
+│   │   └── <span class="file">requirements.txt</span>        <span class="desc"># Backend-specific deps</span>
+│   └── <span class="dir">frontend/</span>                   <span class="desc"># React + Vite + TailwindCSS</span>
+│       ├── <span class="file">package.json</span>             <span class="desc"># Node dependencies</span>
+│       ├── <span class="file">vite.config.js</span>           <span class="desc"># Vite build config</span>
+│       ├── <span class="file">tailwind.config.js</span>       <span class="desc"># Tailwind theme</span>
+│       ├── <span class="dir">dist/</span>                    <span class="desc"># Built static files (served by FastAPI)</span>
+│       └── <span class="dir">src/</span>                     <span class="desc"># React source</span>
+│           ├── <span class="file">App.jsx</span>              <span class="desc"># Main app component (all UI logic)</span>
+│           ├── <span class="file">ReadableOutput.jsx</span>   <span class="desc"># JSON-to-readable renderer</span>
+│           └── <span class="file">index.css</span>            <span class="desc"># Tailwind + custom styles</span>
+│
+└── <span class="dir">node-v26.5.0-win-x64/</span>          <span class="desc"># Bundled Node.js (for frontend build)</span></pre>
+</section>
+
+<!-- ==================== 13 PHASE PIPELINE ==================== -->
+<section id="phases">
+  <h2><span class="num">04</span>13-Phase Pipeline</h2>
+  <p>Each phase has a dedicated prompt template in <code>Innovation Prompts/</code>. The system runs them sequentially, passing the output of each phase as compressed context to the next.</p>
+
+  <div class="phase-list">
+    <div class="phase-item"><div class="phase-num">0</div><span>User Intent &amp; Scope Setup</span></div>
+    <div class="phase-item"><div class="phase-num">1</div><span>Research</span></div>
+    <div class="phase-item"><div class="phase-num">2</div><span>Problem Discovery &amp; Opportunity Mining</span></div>
+    <div class="phase-item"><div class="phase-num">3</div><span>Idea Generation</span></div>
+    <div class="phase-item"><div class="phase-num">4</div><span>Idea Screening &amp; Shortlisting</span></div>
+    <div class="phase-item"><div class="phase-num">5</div><span>Prior Art &amp; Patent Landscape Search</span></div>
+    <div class="phase-item"><div class="phase-num">6</div><span>Novelty &amp; Inventive Step Analysis</span></div>
+    <div class="phase-item"><div class="phase-num">7</div><span>Technical Feasibility Analysis</span></div>
+    <div class="phase-item"><div class="phase-num">8</div><span>Cost &amp; Effort Estimation</span></div>
+    <div class="phase-item"><div class="phase-num">9</div><span>Safety, Compliance &amp; Risk Review</span></div>
+    <div class="phase-item"><div class="phase-num">10</div><span>Patent Abstract / Invention Disclosure Drafting</span></div>
+    <div class="phase-item"><div class="phase-num">11</div><span>Fact-Checking &amp; Evidence Validation</span></div>
+    <div class="phase-item"><div class="phase-num">12</div><span>Final Recommendation &amp; Decision Support</span></div>
+  </div>
+
+  <h3>Inter-Phase Context Flow</h3>
+  <div class="card card-accent">
+    <ul>
+      <li><strong>Phase 0</strong>: Receives <code>{{USER_INPUT}}</code> — the user's initial idea description</li>
+      <li><strong>Phases 1–10</strong>: Each receives <code>{{PHASE_N-1_OUTPUT}}</code> — the compressed output of the previous phase</li>
+      <li><strong>Phase 11</strong>: Receives <code>{{HISTORICAL_CONTEXT}}</code> — aggregated outputs from phases 5–9 (fact-checking against earlier analysis)</li>
+      <li><strong>Phase 12</strong>: Receives <code>{{CUMULATIVE_CONTEXT}}</code> — aggregated outputs from phases 4–10 (final synthesis)</li>
+      <li><strong>User-referenced phases</strong>: The user can select any completed phase outputs to inject as additional <code>[REFERENCED OUTPUT]</code> blocks into the prompt</li>
+      <li><strong>Feedback</strong>: User-provided feedback for a phase is prepended to the next phase's prompt as <code>[ADDITIONAL USER FEEDBACK]</code></li>
+    </ul>
+  </div>
+
+  <h3>Output Compression</h3>
+  <p>
+    When <code>COMPRESS_PHASE_OUTPUTS = True</code> (default), outputs exceeding <code>OUTPUT_COMPRESSION_THRESHOLD</code> (6000 tokens)
+    are truncated using tiktoken before being passed to the next phase. This prevents context window overflow on long sessions.
+  </p>
+</section>
+
+<!-- ==================== BACKEND API ==================== -->
+<section id="backend">
+  <h2><span class="num">05</span>Backend API (FastAPI)</h2>
+  <p>The backend is a FastAPI application in <code>web/backend/main.py</code>. It maintains in-memory session state and persists outputs to disk.</p>
+
+  <h3>REST Endpoints</h3>
+  <table>
+    <thead>
+      <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>GET</code></td><td><code>/api/health</code></td><td>Health check</td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/phases</code></td><td>List all 13 phases with names</td></tr>
+      <tr><td><code>POST</code></td><td><code>/api/sessions</code></td><td>Start a new session (accepts <code>user_input</code>, <code>provider</code>, <code>mock</code>)</td></tr>
+      <tr><td><code>POST</code></td><td><code>/api/sessions/{id}/run/{phase}</code></td><td>Run a specific phase (accepts <code>referenced_phases</code> array)</td></tr>
+      <tr><td><code>POST</code></td><td><code>/api/sessions/{id}/gate</code></td><td>Submit gate decision (<code>accept</code>, <code>edit</code>, <code>feedback</code>, <code>exit</code>, <code>rerun</code>)</td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/sessions/{id}</code></td><td>Get session metadata (current phase, completed phases, model)</td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/cumulative</code></td><td>Get cumulative output across all phases</td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/phase/{phase}</code></td><td>Get a specific phase's output</td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/phase/{phase}/export</code></td><td>Export phase output as <code>?format=md|pdf|docx</code></td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/sessions/list</code></td><td>List all saved sessions from <code>outputs/</code></td></tr>
+      <tr><td><code>POST</code></td><td><code>/api/sessions/resume</code></td><td>Resume a saved session (accepts <code>session_dir</code> path)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Session Lifecycle</h3>
+  <div class="card">
+    <pre><code>1. POST /api/sessions           → Creates in-memory session, returns session_id
+2. POST /api/sessions/{id}/run/{phase}  → Calls LLM, returns output, status = awaiting_gate
+3. POST /api/sessions/{id}/gate         → User decision (accept/edit/feedback/exit/rerun)
+   ├── accept  → saves output, advances to next phase
+   ├── edit    → saves edited output, advances to next phase
+   ├── feedback → saves feedback for next phase, advances
+   ├── exit    → saves state, session paused
+   └── rerun   → re-runs current phase
+4. Auto-save after every gate action (except rerun)
+5. GET /api/sessions/list    → Lists all saved sessions
+6. POST /api/sessions/resume → Reloads session from disk into memory</code></pre>
+  </div>
+
+  <h3>Export Endpoint</h3>
+  <p>The <code>GET /api/sessions/{id}/phase/{phase}/export?format=md|pdf|docx</code> endpoint converts JSON phase output to downloadable files:</p>
+  <ul>
+    <li><strong><code>.md</code></strong>: JSON is converted to structured Markdown with headings, bullet points, and key-value pairs</li>
+    <li><strong><code>.pdf</code></strong>: Markdown is rendered to PDF using <code>fpdf2</code> with heading styles and bullet formatting</li>
+    <li><strong><code>.docx</code></strong>: Markdown is rendered to Word document using <code>python-docx</code> with native heading/bullet styles</li>
+  </ul>
+</section>
+
+<!-- ==================== FRONTEND ==================== -->
+<section id="frontend">
+  <h2><span class="num">06</span>Frontend (React + TailwindCSS)</h2>
+  <p>The frontend is a single-page React application built with Vite and styled with TailwindCSS. It uses a dark theme with CSS custom properties.</p>
+
+  <h3>Components</h3>
+  <table>
+    <thead><tr><th>Component</th><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>App</code></td><td><code>App.jsx</code></td><td>Main component — manages all state, API calls, and renders all views</td></tr>
+      <tr><td><code>PhaseSidebar</code></td><td><code>App.jsx</code></td><td>Left sidebar with 13 phase buttons, progress bar, completion indicators</td></tr>
+      <tr><td><code>GatePanel</code></td><td><code>App.jsx</code></td><td>Bottom panel with Accept/Edit/Feedback/Rerun/Cumulative/Save&amp;Exit buttons</td></tr>
+      <tr><td><code>JsonView</code></td><td><code>App.jsx</code></td><td>Recursive JSON tree renderer for raw JSON view mode</td></tr>
+      <tr><td><code>ReadableOutput</code></td><td><code>ReadableOutput.jsx</code></td><td>Formats parsed JSON into color-coded, human-readable sections</td></tr>
+    </tbody>
+  </table>
+
+  <h3>UI Views</h3>
+  <ul>
+    <li><strong>Start Screen</strong>: Provider selection (Groq/OpenAI/Nararouter/Mock), execution mode (Normal/Autonomous), initial input textarea, "Resume Saved Session" button</li>
+    <li><strong>Phase Sidebar</strong>: 13 phases with status icons (running spinner, green check, awaiting dot), progress bar</li>
+    <li><strong>Phase Content Area</strong>: Shows running spinner, idle (Run button + reference panel), output (Formatted/Raw JSON toggle + export buttons), or completed state</li>
+    <li><strong>Gate Panel</strong>: Accept, Edit (textarea), Feedback (input), Rerun, Cumulative view, Save &amp; Exit</li>
+    <li><strong>Resume Modal</strong>: Lists all saved sessions with provider badge, user input, completed phases count, next phase, model</li>
+    <li><strong>Reference Panel</strong>: Checkbox list of completed phases to inject as context into the next phase run</li>
+    <li><strong>Cumulative Modal</strong>: Full-screen modal showing all cumulative output</li>
+  </ul>
+
+  <h3>State Management</h3>
+  <p>All state is managed via React <code>useState</code> hooks in <code>App.jsx</code>. Key state variables:</p>
+  <table>
+    <thead><tr><th>State</th><th>Type</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>sessionId</code></td><td>string</td><td>Active session ID from backend</td></tr>
+      <tr><td><code>currentPhase</code></td><td>number</td><td>Currently displayed phase</td></tr>
+      <tr><td><code>activePhase</code></td><td>number</td><td>Phase the user is actively working on</td></tr>
+      <tr><td><code>completedPhases</code></td><td>number[]</td><td>Array of completed phase numbers</td></tr>
+      <tr><td><code>phaseStatus</code></td><td>string</td><td>idle | running | awaiting_gate | viewing | completed | error | exited</td></tr>
+      <tr><td><code>phaseOutput</code></td><td>string</td><td>Raw LLM output for current phase</td></tr>
+      <tr><td><code>parsedOutput</code></td><td>object</td><td>Parsed JSON from phase output</td></tr>
+      <tr><td><code>referencedPhases</code></td><td>number[]</td><td>Selected phases to inject as context</td></tr>
+      <tr><td><code>autoRunning</code></td><td>boolean</td><td>Whether autonomous mode is active</td></tr>
+      <tr><td><code>showResume</code></td><td>boolean</td><td>Resume modal visibility</td></tr>
+      <tr><td><code>exporting</code></td><td>boolean</td><td>Export in progress flag</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== FEATURES ==================== -->
+<section id="features">
+  <h2><span class="num">07</span>Features</h2>
+
+  <h3>Save &amp; Resume</h3>
+  <div class="card card-green">
+    <ul>
+      <li>Sessions are <strong>auto-saved</strong> to <code>outputs/session_YYYYMMDD_HHMMSS/</code> after every gate action (accept, edit, feedback, exit)</li>
+      <li><code>session_state.json</code> stores: current phase, completed phases, user input, model, provider</li>
+      <li>All phase outputs are saved as individual <code>.md</code> files</li>
+      <li>"Resume Saved Session" button on start screen lists all sessions with metadata</li>
+      <li>Resume reloads all completed outputs into memory and positions at the next uncompleted phase</li>
+    </ul>
+  </div>
+
+  <h3>Phase Output Referencing</h3>
+  <div class="card card-accent">
+    <ul>
+      <li>On the idle screen (before running a phase), a "Reference Completed Phases" button appears if completed phases exist</li>
+      <li>Clicking opens a panel with checkboxes for each completed phase</li>
+      <li>Selected phase outputs are compressed and prepended to the prompt as <code>[REFERENCED OUTPUT]</code> blocks</li>
+      <li>Multiple phases can be selected simultaneously</li>
+      <li>Badge count shows how many phases are currently selected</li>
+    </ul>
+  </div>
+
+  <h3>Export (MD / PDF / DOCX)</h3>
+  <div class="card card-accent">
+    <ul>
+      <li>Three export buttons appear next to the view mode toggle whenever phase output is displayed</li>
+      <li>Works in both "viewing completed phase" and "awaiting gate" modes</li>
+      <li><strong>.md</strong>: Structured Markdown with headings, bullet lists, bold key-value pairs</li>
+      <li><strong>.pdf</strong>: Formatted PDF with heading hierarchy, bullet points, body text (via fpdf2)</li>
+      <li><strong>.docx</strong>: Word document with native heading styles and bullet lists (via python-docx)</li>
+      <li>Files download directly via browser blob URL</li>
+    </ul>
+  </div>
+
+  <h3>Autonomous Mode</h3>
+  <div class="card">
+    <ul>
+      <li>Selectable from the start screen</li>
+      <li>Auto-accepts each phase output and chains to the next without manual review</li>
+      <li>"Stop Auto-Run" button available during execution</li>
+      <li>Still saves state after each auto-accept</li>
+    </ul>
+  </div>
+
+  <h3>Output Compression</h3>
+  <div class="card">
+    <ul>
+      <li>Enabled by default (<code>COMPRESS_PHASE_OUTPUTS = True</code>)</li>
+      <li>Outputs exceeding <code>OUTPUT_COMPRESSION_THRESHOLD</code> (6000 tokens) are truncated via tiktoken</li>
+      <li>Phase 11 receives historical context from phases 5–9 (compressed)</li>
+      <li>Phase 12 receives cumulative context from phases 4–10 (compressed)</li>
+      <li>Token warning threshold at 50,000 tokens for aggregated contexts</li>
+    </ul>
+  </div>
+
+  <h3>Gate System</h3>
+  <table>
+    <thead><tr><th>Action</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Accept</strong></td><td>Accept the LLM output as-is and proceed to next phase</td></tr>
+      <tr><td><strong>Edit</strong></td><td>Open a textarea to manually edit the output; edited version is saved and accepted</td></tr>
+      <tr><td><strong>Feedback</strong></td><td>Provide feedback text that gets prepended to the next phase's prompt</td></tr>
+      <tr><td><strong>Rerun</strong></td><td>Re-run the current phase (new LLM call with same prompt)</td></tr>
+      <tr><td><strong>Cumulative</strong></td><td>View all phase outputs combined in a modal</td></tr>
+      <tr><td><strong>Save &amp; Exit</strong></td><td>Save session state and exit (can resume later)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== CONFIGURATION ==================== -->
+<section id="config">
+  <h2><span class="num">08</span>Configuration</h2>
+
+  <h3>Environment Variables (<code>.env</code>)</h3>
+  <p>Copy <code>.env.example</code> to <code>.env</code> and fill in your API keys:</p>
+  <pre><code># OpenAI
+OPENAI_API_KEY=sk-proj-your_openai_key
+OPENAI_MODEL=gpt-4o
+OPENAI_TEMPERATURE=0.7
+OPENAI_MAX_TOKENS=4096
+
+# Groq (free tier available)
+API_PROVIDER=groq
+GROQ_API_KEY=gsk_your_groq_key
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# Nararouter
+NARAROUTER_API_KEY=sk_nry_your_nararouter_key
+NARAROUTER_MODEL=agnes-2.5-flash
+NARAROUTER_BASE_URL=https://router.bynara.id/v1</code></pre>
+
+  <h3>Key Configuration Values (<code>harness/config.py</code>)</h3>
+  <table>
+    <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>API_PROVIDER</code></td><td><code>"openai"</code></td><td>Default provider: <code>openai</code>, <code>groq</code>, or <code>nararouter</code></td></tr>
+      <tr><td><code>USE_JSON_OUTPUT</code></td><td><code>True</code></td><td>Request JSON-formatted responses from the LLM</td></tr>
+      <tr><td><code>COMPRESS_PHASE_OUTPUTS</code></td><td><code>True</code></td><td>Truncate long outputs before passing to next phase</td></tr>
+      <tr><td><code>OUTPUT_COMPRESSION_THRESHOLD</code></td><td><code>6000</code></td><td>Max tokens for inter-phase output transfer</td></tr>
+      <tr><td><code>TOKEN_WARNING_THRESHOLD</code></td><td><code>50000</code></td><td>Max tokens for aggregated historical/cumulative context</td></tr>
+      <tr><td><code>MAX_RETRIES</code></td><td><code>3</code></td><td>API call retry count on rate limit / error</td></tr>
+      <tr><td><code>RETRY_BASE_DELAY</code></td><td><code>2</code></td><td>Base delay (seconds) for exponential backoff</td></tr>
+      <tr><td><code>OPENAI_TEMPERATURE</code></td><td><code>0.7</code></td><td>LLM sampling temperature</td></tr>
+      <tr><td><code>OPENAI_MAX_TOKENS</code></td><td><code>4096</code></td><td>Max response tokens per API call</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Prompt Templates</h3>
+  <p>
+    Prompts are stored as plain text files in <code>Innovation Prompts/</code>. Each prompt contains
+    <code>{{VARIABLES}}</code> placeholders that are substituted at runtime. When <code>USE_JSON_OUTPUT = True</code>,
+    the prompt loader automatically transforms the <code>&lt;output_instructions&gt;</code> section to request JSON-formatted responses.
+  </p>
+
+  <h3>Dependencies</h3>
+  <div class="grid">
+    <div class="card">
+      <h4>Python (<code>requirements.txt</code>)</h4>
+      <ul>
+        <li><code>openai</code> — OpenAI-compatible API client</li>
+        <li><code>tiktoken</code> — Token counting</li>
+        <li><code>rich</code> — Terminal formatting (CLI)</li>
+        <li><code>python-dotenv</code> — .env loading</li>
+        <li><code>fastapi</code> — Web API framework</li>
+        <li><code>uvicorn</code> — ASGI server</li>
+        <li><code>httpx</code> — HTTP client</li>
+        <li><code>python-docx</code> — DOCX export</li>
+        <li><code>fpdf2</code> — PDF export</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Node.js (<code>web/frontend/package.json</code>)</h4>
+      <ul>
+        <li><code>react</code> + <code>react-dom</code> — UI framework</li>
+        <li><code>vite</code> — Build tool &amp; dev server</li>
+        <li><code>tailwindcss</code> — Utility-first CSS</li>
+        <li><code>lucide-react</code> — Icon library</li>
+        <li><code>postcss</code> + <code>autoprefixer</code> — CSS processing</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== START & STOP SERVER ==================== -->
+<section id="start">
+  <h2><span class="num">09</span>Starting &amp; Stopping the Server</h2>
+
+  <h3>Prerequisites</h3>
+  <ol>
+    <li>Python 3.10+ installed</li>
+    <li>Node.js 18+ (bundled in <code>node-v26.5.0-win-x64/</code> for Windows)</li>
+    <li><code>.env</code> file with at least one provider's API key</li>
+  </ol>
+
+  <h3>First-Time Setup</h3>
+  <pre><code># 1. Install Python dependencies
+pip install -r requirements.txt
+
+# 2. Create .env from example
+copy .env.example .env
+# Edit .env and add your API keys
+
+# 3. Build the frontend (one-time, or after UI changes)
+cd web/frontend
+npm install
+npm run build
+cd ../..</code></pre>
+
+  <div class="note note-info">
+    <strong>Note:</strong> On this Windows machine, Node.js is bundled at <code>node-v26.5.0-win-x64/</code>.
+    If <code>npm</code> is not on your PATH, use the full path:
+    <pre style="margin-top:8px;"><code>node node-v26.5.0-win-x64\node_modules\npm\bin\npm-cli.js run build --prefix web/frontend</code></pre>
+  </div>
+
+  <h3>Start the Web Server</h3>
+  <pre><code>python -m uvicorn web.backend.main:app --host 127.0.0.1 --port 8000</code></pre>
+  <p>Then open <a href="http://127.0.0.1:8000" style="color: var(--accent);">http://127.0.0.1:8000</a> in your browser.</p>
+
+  <div class="note note-info">
+    <strong>What happens on start:</strong>
+    <ul style="margin-top: 8px;">
+      <li>FastAPI loads <code>.env</code> via <code>python-dotenv</code></li>
+      <li>Prompt templates are loaded from <code>Innovation Prompts/</code></li>
+      <li>Static frontend files are served from <code>web/frontend/dist/</code></li>
+      <li>Sessions are stored in memory (not persisted across server restarts, but outputs on disk survive)</li>
+    </ul>
+  </div>
+
+  <h3>Stop the Web Server</h3>
+  <div class="card card-red">
+    <h4>Method 1: Keyboard Shortcut (Recommended)</h4>
+    <p>Press <code>Ctrl + C</code> in the terminal where the server is running. This gracefully shuts down uvicorn.</p>
+  </div>
+  <div class="card card-red">
+    <h4>Method 2: Find and Kill Process (Windows)</h4>
+    <pre><code># Find the process ID (PID) listening on port 8000
+netstat -ano | findstr :8000
+
+# Kill the process (replace PID with the number from above)
+taskkill /PID &lt;PID&gt; /F</code></pre>
+  </div>
+  <div class="card card-red">
+    <h4>Method 3: Kill by Process Name (Windows)</h4>
+    <pre><code>taskkill /F /IM python.exe /FI "WINDOWTITLE eq *uvicorn*"</code></pre>
+  </div>
+
+  <div class="note note-warn">
+    <strong>Important:</strong> In-memory session state is lost when the server stops. However, all phase outputs and
+    session state files on disk remain. Use "Resume Saved Session" after restarting to continue a previous session.
+  </div>
+
+  <h3>Rebuilding the Frontend</h3>
+  <p>After making changes to files in <code>web/frontend/src/</code>, rebuild the frontend:</p>
+  <pre><code># Standard (if npm is on PATH)
+cd web/frontend && npm run build
+
+# On this machine (using bundled Node.js)
+node node-v26.5.0-win-x64\node_modules\npm\bin\npm-cli.js run build --prefix web/frontend</code></pre>
+  <p>The built files go to <code>web/frontend/dist/</code> and are served automatically by FastAPI on next page load.</p>
+</section>
+
+<!-- ==================== CLI MODE ==================== -->
+<section id="cli">
+  <h2><span class="num">10</span>CLI Mode</h2>
+  <p>The CLI mode (<code>run_harness.py</code>) provides the same 13-phase pipeline in a terminal interface using <code>rich</code> for formatted output.</p>
+
+  <h3>Basic Usage</h3>
+  <pre><code># Interactive mode (prompts for user input)
+python run_harness.py
+
+# With initial input
+python run_harness.py --input "Battery thermal management for EVs"
+
+# With specific provider
+python run_harness.py --provider groq
+python run_harness.py --provider openai
+python run_harness.py --provider nararouter
+
+# Mock mode (no API key needed)
+python run_harness.py --mock
+
+# Resume a saved session
+python run_harness.py --resume outputs/session_20240101_120000/
+
+# Override model and temperature
+python run_harness.py --model gpt-4o --temperature 0.5 --max-tokens 8192</code></pre>
+
+  <h3>CLI Arguments</h3>
+  <table>
+    <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>--resume</code></td><td>path</td><td>None</td><td>Path to session directory to resume</td></tr>
+      <tr><td><code>--model</code></td><td>string</td><td>From .env</td><td>LLM model name</td></tr>
+      <tr><td><code>--temperature</code></td><td>float</td><td>0.7</td><td>Sampling temperature</td></tr>
+      <tr><td><code>--max-tokens</code></td><td>int</td><td>4096</td><td>Max response tokens</td></tr>
+      <tr><td><code>--input</code></td><td>string</td><td>None</td><td>Initial user input (skips interactive prompt)</td></tr>
+      <tr><td><code>--start-phase</code></td><td>int</td><td>None</td><td>Phase to start from (0–12, for resume override)</td></tr>
+      <tr><td><code>--mock</code></td><td>flag</td><td>False</td><td>Use mock API client (no API key needed)</td></tr>
+      <tr><td><code>--provider</code></td><td>string</td><td>From .env</td><td>API provider: <code>openai</code>, <code>groq</code>, or <code>nararouter</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>CLI Gate Menu</h3>
+  <p>After each phase output, the CLI presents a numbered menu:</p>
+  <pre><code>Gate Options:
+  [1] Accept  - proceed to next phase
+  [2] Edit    - open in editor
+  [3] Feedback - provide feedback for next phase
+  [4] Save & Exit
+  [5] Rerun phase
+  [6] View cumulative output (all phases so far)
+
+Choice [1-6]: </code></pre>
+</section>
+
+</div>
+
+<footer>
+  Patent Helper Harness — Automotive R&amp;D Patent Ideation Pipeline<br>
+  Generated August 2026
+</footer>
+
+</body>
+</html>
