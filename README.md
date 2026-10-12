@@ -31,6 +31,28 @@ Equipped with both a rich terminal CLI and a modern, ambient-styled React web ap
 
 ---
 
+## 📸 Application Preview
+
+<p align="center">
+  <img src="docs/images/start_screen.png" alt="Patent Helper Harness Start Screen" width="850"/>
+  <br/>
+  <em>Lively ambient light theme with preset selector and LLM provider toggles</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/workspace_review_gate.png" alt="Phased Workspace and Review Gate" width="850"/>
+  <br/>
+  <em>Human-in-the-loop workspace: 13-phase stepper, claim reader, and docked Review Gate</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/cumulative_modal.png" alt="Cumulative Indexed Patent Document" width="850"/>
+  <br/>
+  <em>Cumulative multi-phase indexed document review modal with line indexing</em>
+</p>
+
+---
+
 ## 🔄 The 13 Innovation Phases
 
 | Phase | Title | Focus & Core Output |
@@ -189,6 +211,7 @@ PatentHarness/
 ├── tests/                  # Pytest test suite
 │   ├── test_harness_stress.py # Unit, resilience, bounds, and concurrency tests
 │   └── test_e2e_full_chain.py # Sequential 13-phase chain integration test
+├── docs/images/            # Application preview screenshots
 ├── outputs/                # Session checkpoints (git-ignored)
 ├── run_harness.py          # CLI entry point
 ├── requirements.txt        # Python dependencies
