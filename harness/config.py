@@ -3,20 +3,38 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_PROVIDER = os.getenv("API_PROVIDER", "openai")  # "openai" or "groq"
+# Active Provider: "openai", "anthropic", "gemini", or "openaicompatible"
+API_PROVIDER = os.getenv("API_PROVIDER", "openai").lower()
 
+# 1. OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
+# 2. Anthropic
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1")
+
+# 3. Google Gemini (via official OpenAI-compatible endpoint)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
+GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
+
+# 4. OpenAI-Compatible (Local Ollama, vLLM, DeepSeek, Groq, LMStudio, Together, etc.)
+OPENAI_COMPATIBLE_API_KEY = os.getenv("OPENAI_COMPATIBLE_API_KEY", os.getenv("GROQ_API_KEY", ""))
+OPENAI_COMPATIBLE_MODEL = os.getenv("OPENAI_COMPATIBLE_MODEL", os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"))
+OPENAI_COMPATIBLE_BASE_URL = os.getenv("OPENAI_COMPATIBLE_BASE_URL", "http://localhost:11434/v1")
+
+# Legacy compatibility aliases
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-
 NARAROUTER_API_KEY = os.getenv("NARAROUTER_API_KEY", "")
 NARAROUTER_MODEL = os.getenv("NARAROUTER_MODEL", "agnes-2.5-flash")
 NARAROUTER_BASE_URL = os.getenv("NARAROUTER_BASE_URL", "https://router.bynara.id/v1")
 
+# Hyperparameters
 OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
 OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "4096"))
 

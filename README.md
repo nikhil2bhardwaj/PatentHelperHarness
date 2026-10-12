@@ -24,7 +24,7 @@ Equipped with both a rich terminal CLI and a modern, ambient-styled React web ap
 - **Dual Interface:**
   - **Lively Web UI (React/Vite + Tailwind):** Warm, high-contrast document view with live token metrics, elapsed timer, skeleton shimmers, claim badges, and interactive cumulative modal.
   - **Rich Terminal CLI:** Color-coded tables, markdown rendering, and interactive command prompts.
-- **Multi-Provider LLM Architecture:** Seamlessly switch between **OpenAI (GPT-4o)**, **Groq (LLaMA 3.3 70B)**, custom OpenAI-compatible endpoints, or the zero-cost **Mock API Client** for rapid offline testing.
+- **Multi-Provider LLM Architecture:** Enterprise support for **OpenAI** (GPT-4o), **Anthropic** (Claude 3.5 Sonnet), **Google Gemini** (1.5 Pro), and any **OpenAI-Compatible** endpoint (local Ollama, vLLM, DeepSeek, Groq, LMStudio), plus zero-cost **Mock API Client** for offline development.
 - **Smart Context Compression:** Automatically compresses preceding phase outputs (reducing token consumption by 60–80%) while maintaining historical continuity for semantic cross-checks.
 - **Enterprise-Grade Multi-Format Export:** Export patent disclosures directly to **PDF** (with sanitized Latin-1 formatting), **Microsoft Word (`.docx`)**, or **Markdown (`.md`)**.
 - **Battle-Tested Resilience:** Automated pytest test suite covering edge-case boundaries, path traversal defense, and 20-client high-concurrency stress testing.
@@ -36,13 +36,19 @@ Equipped with both a rich terminal CLI and a modern, ambient-styled React web ap
 <p align="center">
   <img src="docs/images/start_screen.png" alt="Patent Helper Harness Start Screen" width="850"/>
   <br/>
-  <em>Lively ambient light theme with preset selector and LLM provider toggles</em>
+  <em>Lively ambient light theme with preset selector and professional LLM provider toggles (OpenAI, Anthropic, Gemini, Custom)</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/custom_endpoint_drawer.png" alt="Custom OpenAI-Compatible Endpoint Configuration" width="850"/>
+  <br/>
+  <em>Custom Endpoint drawer for local LLMs (Ollama, vLLM, DeepSeek, LMStudio) with custom Base URL and model targeting</em>
 </p>
 
 <p align="center">
   <img src="docs/images/workspace_review_gate.png" alt="Phased Workspace and Review Gate" width="850"/>
   <br/>
-  <em>Human-in-the-loop workspace: 13-phase stepper, claim reader, and docked Review Gate</em>
+  <em>Human-in-the-loop workspace: 13-phase stepper, high-contrast claim reader, and docked Review Gate</em>
 </p>
 
 <p align="center">
@@ -105,12 +111,24 @@ cp .env.example .env
 
 Edit `.env` with your preferred credentials:
 ```env
+# Provider Selection: "openai", "anthropic", "gemini", or "openaicompatible"
+API_PROVIDER=openai
+
+# 1. OpenAI
 OPENAI_API_KEY=your_openai_key_here
 OPENAI_MODEL=gpt-4o
 
-API_PROVIDER=openai  # or "groq"
-GROQ_API_KEY=your_groq_key_here
-GROQ_MODEL=llama-3.3-70b-versatile
+# 2. Anthropic
+ANTHROPIC_API_KEY=your_anthropic_key_here
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+
+# 3. Google Gemini
+GEMINI_API_KEY=your_gemini_key_here
+GEMINI_MODEL=gemini-1.5-pro
+
+# 4. OpenAI-Compatible (Ollama, vLLM, DeepSeek, Groq, LMStudio)
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:11434/v1
+OPENAI_COMPATIBLE_MODEL=llama3.3:70b
 ```
 
 *(Note: You can run everything in **Mock Mode** without any API key by passing `--mock` or checking Mock Mode in the UI).*
@@ -153,8 +171,17 @@ npm run dev
 
 3. **Specify Provider and Model:**
    ```bash
+   # OpenAI
    python run_harness.py --provider openai --model gpt-4o
-   python run_harness.py --provider groq --model llama-3.3-70b-versatile
+
+   # Anthropic Claude
+   python run_harness.py --provider anthropic --model claude-3-5-sonnet-20241022
+
+   # Google Gemini
+   python run_harness.py --provider gemini --model gemini-1.5-pro
+
+   # Local / Custom OpenAI-Compatible (Ollama / vLLM / DeepSeek)
+   python run_harness.py --provider openaicompatible --base-url http://localhost:11434/v1 --model llama3.3:70b
    ```
 
 4. **Resume an existing session checkpoint:**

@@ -309,6 +309,9 @@ export default function App() {
   const [userInput, setUserInput] = useState('')
   const [provider, setProvider] = useState('openai')
   const [mockMode, setMockMode] = useState(false)
+  const [customModel, setCustomModel] = useState('')
+  const [customBaseUrl, setCustomBaseUrl] = useState('')
+  const [customApiKey, setCustomApiKey] = useState('')
   const [showStart, setShowStart] = useState(true)
   const [activePhase, setActivePhase] = useState(0)
   const [viewingPhase, setViewingPhase] = useState(null)
@@ -353,7 +356,14 @@ export default function App() {
       const res = await fetch(`${API}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_input: userInput, provider, mock: mockMode }),
+        body: JSON.stringify({
+          user_input: userInput,
+          provider,
+          model: customModel.trim() || undefined,
+          base_url: customBaseUrl.trim() || undefined,
+          api_key: customApiKey.trim() || undefined,
+          mock: mockMode
+        }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -721,11 +731,12 @@ export default function App() {
               <label className="text-xs font-semibold text-slate-700 block">
                 LLM Provider
               </label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {[
                   { id: 'openai', label: 'OpenAI', desc: 'GPT-4o' },
-                  { id: 'groq', label: 'Groq', desc: 'Fast' },
-                  { id: 'nararouter', label: 'Nararouter', desc: 'Agnes' },
+                  { id: 'anthropic', label: 'Anthropic', desc: 'Claude 3.5' },
+                  { id: 'gemini', label: 'Gemini', desc: '1.5 Pro' },
+                  { id: 'openaicompatible', label: 'Custom', desc: 'Compatible' },
                 ].map(p => (
                   <button
                     key={p.id}
@@ -741,6 +752,36 @@ export default function App() {
                   </button>
                 ))}
               </div>
+
+              {provider === 'openaicompatible' && !mockMode && (
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2 animate-fade-in text-left">
+                  <div className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider">Custom Endpoint (Ollama / vLLM / Groq / DeepSeek)</div>
+                  <input
+                    type="text"
+                    value={customBaseUrl}
+                    onChange={e => setCustomBaseUrl(e.target.value)}
+                    placeholder="Base URL (e.g. http://localhost:11434/v1)"
+                    className="w-full text-[11px] p-1.5 bg-white border border-slate-200 rounded-md focus:border-slate-900 focus:outline-none"
+                  />
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <input
+                      type="text"
+                      value={customModel}
+                      onChange={e => setCustomModel(e.target.value)}
+                      placeholder="Model name"
+                      className="text-[11px] p-1.5 bg-white border border-slate-200 rounded-md focus:border-slate-900 focus:outline-none"
+                    />
+                    <input
+                      type="password"
+                      value={customApiKey}
+                      onChange={e => setCustomApiKey(e.target.value)}
+                      placeholder="API Key (optional)"
+                      className="text-[11px] p-1.5 bg-white border border-slate-200 rounded-md focus:border-slate-900 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={() => setMockMode(!mockMode)}
                 className={`w-full py-1.5 px-3 rounded-lg border text-xs font-medium transition-all flex items-center justify-between cursor-pointer ${

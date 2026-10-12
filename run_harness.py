@@ -62,13 +62,26 @@ def main():
         "--provider",
         type=str,
         default=None,
-        help="API provider: 'openai' or 'groq' (default: from .env or 'openai')",
+        choices=["openai", "anthropic", "gemini", "openaicompatible", "groq", "nararouter"],
+        help="API provider: 'openai', 'anthropic', 'gemini', or 'openaicompatible' (default: from .env)",
+    )
+    parser.add_argument(
+        "--base-url",
+        type=str,
+        default=None,
+        help="Custom base URL for OpenAI-compatible endpoints (e.g. http://localhost:11434/v1)",
+    )
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="Custom API key override",
     )
 
     args = parser.parse_args()
 
     if args.mock:
-        console.print("[yellow][MOCK MODE] Using simulated API client. No OpenAI API calls will be made.[/yellow]\n")
+        console.print("[yellow][MOCK MODE] Using simulated API client. No external API calls will be made.[/yellow]\n")
         api_client = MockAPIClient(
             model=args.model,
             temperature=args.temperature,
@@ -76,12 +89,13 @@ def main():
         )
     else:
         provider = args.provider or API_PROVIDER
-        default_model = GROQ_MODEL if provider == "groq" else OPENAI_MODEL
         api_client = APIClient(
             model=args.model,
             temperature=args.temperature,
             max_tokens=args.max_tokens,
             provider=provider,
+            base_url=args.base_url,
+            api_key=args.api_key,
         )
         console.print(f"[dim]Provider: {provider} | Model: {api_client.model}[/dim]")
 

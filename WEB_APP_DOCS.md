@@ -37,19 +37,24 @@ Copy-Item .env.example .env
 Edit `.env` with your actual keys:
 
 ```env
+# Provider Selection: "openai", "anthropic", "gemini", or "openaicompatible"
+API_PROVIDER=openai
+
 # OpenAI
 OPENAI_API_KEY=sk-proj-your_key
 OPENAI_MODEL=gpt-4o
 
-# Groq (default provider)
-API_PROVIDER=groq
-GROQ_API_KEY=gsk_your_key
-GROQ_MODEL=llama-3.3-70b-versatile
+# Anthropic
+ANTHROPIC_API_KEY=sk-ant-your_key
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
 
-# Nararouter
-NARAROUTER_API_KEY=sk_nry_your_key
-NARAROUTER_MODEL=agnes-2.5-flash
-NARAROUTER_BASE_URL=https://router.bynara.id/v1
+# Google Gemini
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-1.5-pro
+
+# OpenAI-Compatible (Ollama, vLLM, DeepSeek, Groq, LMStudio)
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:11434/v1
+OPENAI_COMPATIBLE_MODEL=llama3.3:70b
 ```
 
 > **Note**: You only need keys for the providers you plan to use. The provider is selected on the start screen per session.

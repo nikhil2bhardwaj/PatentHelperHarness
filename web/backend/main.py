@@ -44,9 +44,11 @@ sessions: Dict[str, dict] = {}
 
 class StartSessionRequest(BaseModel):
     user_input: str = ""
-    provider: str = "groq"
+    provider: str = "openai"  # "openai", "anthropic", "gemini", "openaicompatible"
     model: Optional[str] = None
     mock: bool = False
+    base_url: Optional[str] = None
+    api_key: Optional[str] = None
 
 
 class GateRequest(BaseModel):
@@ -86,7 +88,12 @@ async def start_session(req: StartSessionRequest):
     if req.mock:
         api_client = MockAPIClient(model=req.model)
     else:
-        api_client = APIClient(model=req.model, provider=req.provider)
+        api_client = APIClient(
+            model=req.model,
+            provider=req.provider,
+            base_url=req.base_url,
+            api_key=req.api_key,
+        )
 
     prompts = load_all_prompts()
     system_prompt = load_system_prompt()
