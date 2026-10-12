@@ -77,33 +77,56 @@ pip install -r requirements.txt
 
 Copy `.env.example` to `.env` and fill in your API key:
 
-**Using Groq (free):**
-```
-API_PROVIDER=groq
-GROQ_API_KEY=gsk_your_key_here
-GROQ_MODEL=llama-3.1-8b-instant
-```
-
 **Using OpenAI:**
-```
+```env
 API_PROVIDER=openai
-OPENAI_API_KEY=sk_your_key_here
+OPENAI_API_KEY=sk-proj-your_key_here
 OPENAI_MODEL=gpt-4o
 ```
 
-Get a Groq API key at [console.groq.com](https://console.groq.com).
+**Using Anthropic Claude:**
+```env
+API_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-your_key_here
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+```
+
+**Using Google Gemini:**
+```env
+API_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_key_here
+GEMINI_MODEL=gemini-1.5-pro
+```
+
+**Using Local / Custom OpenAI-Compatible (Ollama, vLLM, DeepSeek, Groq):**
+```env
+API_PROVIDER=openaicompatible
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:11434/v1
+OPENAI_COMPATIBLE_MODEL=llama3.3:70b
+OPENAI_COMPATIBLE_API_KEY=optional_key
+```
 
 ### 3. Run the Harness
 
-**Interactive mode (recommended):**
+**Interactive CLI mode:**
 ```bash
-python run_harness.py --provider groq
+python run_harness.py
 ```
 You'll be prompted for initial input. Type your topic or press Enter for Autonomous mode.
 
-**With pre-filled input:**
+**Specify Provider and Model:**
 ```bash
-python run_harness.py --provider groq --input "Battery thermal management for EVs"
+# OpenAI
+python run_harness.py --provider openai --model gpt-4o
+
+# Anthropic Claude
+python run_harness.py --provider anthropic --model claude-3-5-sonnet-20241022
+
+# Google Gemini
+python run_harness.py --provider gemini --model gemini-1.5-pro
+
+# OpenAI-Compatible endpoint
+python run_harness.py --provider openaicompatible --base-url http://localhost:11434/v1 --model llama3.3:70b
 ```
 
 **Mock mode (no API needed, for testing):**

@@ -24,9 +24,9 @@ Equipped with both a rich terminal CLI and a modern, ambient-styled React web ap
 - **Dual Interface:**
   - **Lively Web UI (React/Vite + Tailwind):** Warm, high-contrast document view with live token metrics, elapsed timer, skeleton shimmers, claim badges, and interactive cumulative modal.
   - **Rich Terminal CLI:** Color-coded tables, markdown rendering, and interactive command prompts.
-- **Multi-Provider LLM Architecture:** Enterprise support for **OpenAI** (GPT-4o), **Anthropic** (Claude 3.5 Sonnet), **Google Gemini** (1.5 Pro), and any **OpenAI-Compatible** endpoint (local Ollama, vLLM, DeepSeek, Groq, LMStudio), plus zero-cost **Mock API Client** for offline development.
+- **Multi-Provider LLM Architecture:** Enterprise support for **OpenAI** (GPT-4o), **Anthropic** (Claude 3.5 Sonnet), **Google Gemini** (1.5 Pro), and any **OpenAI-Compatible** endpoint (local Ollama, vLLM, DeepSeek, Groq, LMStudio), plus in-UI API key entry and zero-cost **Mock API Client** for offline development.
 - **Smart Context Compression:** Automatically compresses preceding phase outputs (reducing token consumption by 60–80%) while maintaining historical continuity for semantic cross-checks.
-- **Enterprise-Grade Multi-Format Export:** Export patent disclosures directly to **PDF** (with sanitized Latin-1 formatting), **Microsoft Word (`.docx`)**, or **Markdown (`.md`)**.
+- **Enterprise-Grade Multi-Format Export:** Export both individual phase deliverables and the **complete multi-phase cumulative patent disclosure dossier** directly to **PDF** (formatted with sanitized clean typography), **Microsoft Word (`.docx`)**, or **Markdown (`.md`)** via 1-click header buttons and the Cumulative modal.
 - **Battle-Tested Resilience:** Automated pytest test suite covering edge-case boundaries, path traversal defense, and 20-client high-concurrency stress testing.
 
 ---
@@ -36,7 +36,7 @@ Equipped with both a rich terminal CLI and a modern, ambient-styled React web ap
 <p align="center">
   <img src="docs/images/start_screen.png" alt="Patent Helper Harness Start Screen" width="850"/>
   <br/>
-  <em>Lively ambient light theme with preset selector and professional LLM provider toggles (OpenAI, Anthropic, Gemini, Custom)</em>
+  <em>Lively ambient light theme with preset selector, professional LLM provider toggles (OpenAI, Anthropic, Gemini, Custom), and in-UI API key entry with password toggle</em>
 </p>
 
 <p align="center">
@@ -48,13 +48,13 @@ Equipped with both a rich terminal CLI and a modern, ambient-styled React web ap
 <p align="center">
   <img src="docs/images/workspace_review_gate.png" alt="Phased Workspace and Review Gate" width="850"/>
   <br/>
-  <em>Human-in-the-loop workspace: 13-phase stepper, high-contrast claim reader, and docked Review Gate</em>
+  <em>Human-in-the-loop workspace: 13-phase stepper, high-contrast claim reader, docked Review Gate, and 1-click Phase & Cumulative Dossier export buttons</em>
 </p>
 
 <p align="center">
   <img src="docs/images/cumulative_modal.png" alt="Cumulative Indexed Patent Document" width="850"/>
   <br/>
-  <em>Cumulative multi-phase indexed document review modal with line indexing</em>
+  <em>Cumulative multi-phase indexed document review modal with line indexing and 1-click Dossier Export (.pdf, .docx, .md)</em>
 </p>
 
 ---

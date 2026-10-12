@@ -314,21 +314,21 @@
     risk review, and final patent disclosure drafting — with human-in-the-loop gates between each phase.
   </p>
   <p>
-    The system supports three LLM providers (<span class="badge badge-green">Groq</span> <span class="badge badge-blue">OpenAI</span> <span class="badge badge-purple">Nararouter</span>),
-    a mock mode for testing without API keys, and both a <strong>web UI</strong> (React + FastAPI) and a <strong>CLI</strong> interface.
+    The system supports enterprise LLM providers (<span class="badge badge-blue">OpenAI</span> <span class="badge badge-purple">Anthropic</span> <span class="badge badge-green">Gemini</span> <span class="badge badge-amber">OpenAI-Compatible</span>),
+    a zero-cost mock mode for offline testing, and both a modern <strong>web UI</strong> (React + Tailwind + FastAPI) and a rich <strong>CLI</strong> interface.
   </p>
 
   <div class="card card-accent">
     <h4>Key Capabilities</h4>
     <ul>
       <li><strong>13-phase sequential pipeline</strong> with LLM-generated JSON output at each phase</li>
-      <li><strong>Human-in-the-loop gates</strong>: Accept, Edit, Feedback, Rerun, Save &amp; Exit</li>
+      <li><strong>Human-in-the-loop gates</strong>: Accept &amp; Advance, Refine (Edit), Feedback, Rerun, Cumulative view, Save &amp; Exit</li>
       <li><strong>Autonomous mode</strong>: Auto-accept and chain all phases without manual review</li>
-      <li><strong>Save &amp; Resume</strong>: Sessions auto-save after every gate action; resume from any saved session</li>
+      <li><strong>Save &amp; Resume</strong>: Sessions auto-save after every gate action; resume from any saved session checkpoint</li>
       <li><strong>Phase output referencing</strong>: Select completed phase outputs to inject as additional context into the next phase run</li>
-      <li><strong>Export</strong>: Download any phase output as <code>.md</code>, <code>.pdf</code>, or <code>.docx</code></li>
-      <li><strong>Output compression</strong>: Token-aware truncation to fit context windows when passing outputs between phases</li>
-      <li><strong>Multi-provider support</strong>: Groq, OpenAI, Nararouter, or Mock (no API key needed)</li>
+      <li><strong>Dual-Tier Export</strong>: Download individual phase outputs (<code>.md</code>, <code>.pdf</code>, <code>.docx</code>) and the <strong>complete cumulative session patent dossier</strong> (<code>.pdf</code>, <code>.docx</code>, <code>.md</code>)</li>
+      <li><strong>Output compression</strong>: Token-aware truncation to fit context windows when passing outputs between phases (60–80% token reduction)</li>
+      <li><strong>Multi-provider support</strong>: OpenAI (GPT-4o), Anthropic (Claude 3.5), Google Gemini (1.5 Pro), custom OpenAI-Compatible endpoints (Ollama, vLLM, DeepSeek, Groq), or Mock (no API key needed)</li>
     </ul>
   </div>
 </section>
@@ -397,11 +397,10 @@
         <td><code>config.py</code></td>
         <td><code>harness/config.py</code></td>
         <td>Loads <code>.env</code>, defines phase names, prompt file mappings, API keys, compression settings</td>
-      </tr>
       <tr>
         <td><code>api_client.py</code></td>
         <td><code>harness/api_client.py</code></td>
-        <td>OpenAI-compatible client supporting Groq, OpenAI, Nararouter; handles retries with exponential backoff</td>
+        <td>Multi-provider LLM client supporting OpenAI, Anthropic, Gemini, and OpenAI-Compatible endpoints with retry &amp; backoff</td>
       </tr>
       <tr>
         <td><code>mock_client.py</code></td>
@@ -460,7 +459,7 @@
 │
 ├── <span class="dir">harness/</span>                        <span class="desc"># Core engine package</span>
 │   ├── <span class="file">config.py</span>                   <span class="desc"># Configuration &amp; env loading</span>
-│   ├── <span class="file">api_client.py</span>               <span class="desc"># LLM API client (Groq/OpenAI/Nararouter)</span>
+│   ├── <span class="file">api_client.py</span>               <span class="desc"># LLM API client (OpenAI/Anthropic/Gemini/Custom)</span>
 │   ├── <span class="file">mock_client.py</span>              <span class="desc"># Mock API client for testing</span>
 │   ├── <span class="file">prompt_loader.py</span>            <span class="desc"># Prompt template loading &amp; variable substitution</span>
 │   ├── <span class="file">output_store.py</span>             <span class="desc"># Session persistence (phase outputs, state, feedback)</span>
@@ -608,13 +607,13 @@
 
   <h3>UI Views</h3>
   <ul>
-    <li><strong>Start Screen</strong>: Provider selection (Groq/OpenAI/Nararouter/Mock), execution mode (Normal/Autonomous), initial input textarea, "Resume Saved Session" button</li>
-    <li><strong>Phase Sidebar</strong>: 13 phases with status icons (running spinner, green check, awaiting dot), progress bar</li>
-    <li><strong>Phase Content Area</strong>: Shows running spinner, idle (Run button + reference panel), output (Formatted/Raw JSON toggle + export buttons), or completed state</li>
-    <li><strong>Gate Panel</strong>: Accept, Edit (textarea), Feedback (input), Rerun, Cumulative view, Save &amp; Exit</li>
+    <li><strong>Start Screen</strong>: Provider selection (OpenAI/Anthropic/Gemini/Custom/Mock), dedicated API key entry box with password visibility toggle, quick presets, execution mode (Normal/Autonomous), initial input textarea, "Saved Sessions" button</li>
+    <li><strong>Phase Sidebar</strong>: 13 phases with status indicators (running spinner, green check, awaiting dot), progress bar</li>
+    <li><strong>Phase Content Area</strong>: Shows running spinner, idle state (Run button + reference panel), output (Formatted/Raw JSON toggle + Phase and Cumulative Dossier export buttons), or completed state</li>
+    <li><strong>Gate Panel</strong>: Accept &amp; Advance, Refine (Edit textarea), Feedback (input), Rerun, Cumulative view, Save &amp; Exit</li>
     <li><strong>Resume Modal</strong>: Lists all saved sessions with provider badge, user input, completed phases count, next phase, model</li>
     <li><strong>Reference Panel</strong>: Checkbox list of completed phases to inject as context into the next phase run</li>
-    <li><strong>Cumulative Modal</strong>: Full-screen modal showing all cumulative output</li>
+    <li><strong>Cumulative Modal</strong>: Modal showing compiled cumulative multi-phase output, line indexing, copy button, and 1-click <code>Export Dossier: [.pdf] [.docx] [.md]</code> actions</li>
   </ul>
 
   <h3>State Management</h3>
@@ -665,13 +664,22 @@
 
   <h3>Export (MD / PDF / DOCX)</h3>
   <div class="card card-accent">
+    <h4>Phase Deliverable Export</h4>
     <ul>
-      <li>Three export buttons appear next to the view mode toggle whenever phase output is displayed</li>
+      <li>Three export buttons (<code>.md</code>, <code>.pdf</code>, <code>.docx</code>) appear in the top workspace header for the current active or viewed phase</li>
       <li>Works in both "viewing completed phase" and "awaiting gate" modes</li>
-      <li><strong>.md</strong>: Structured Markdown with headings, bullet lists, bold key-value pairs</li>
-      <li><strong>.pdf</strong>: Formatted PDF with heading hierarchy, bullet points, body text (via fpdf2)</li>
-      <li><strong>.docx</strong>: Word document with native heading styles and bullet lists (via python-docx)</li>
-      <li>Files download directly via browser blob URL</li>
+      <li><strong>.md</strong>: Structured Markdown with headings, bullet lists, and key-value attributes</li>
+      <li><strong>.pdf</strong>: Formatted multi-page PDF with heading hierarchy and clean typography (via fpdf2)</li>
+      <li><strong>.docx</strong>: Word document with native heading styles and formatted lists (via python-docx)</li>
+    </ul>
+
+    <h4 style="margin-top: 1rem;">Full Cumulative Session Dossier Export</h4>
+    <ul>
+      <li>Export the complete multi-phase compiled patent disclosure dossier at any point:</li>
+      <li>Direct header buttons: <code>Dossier: [.pdf] [.docx] [.md]</code></li>
+      <li>Cumulative modal header: <code>Export Dossier: [.pdf] [.docx] [.md]</code></li>
+      <li>Builds the compiled document across all completed phases with section headers, index mappings, claims, and strategic analyses in a single unified deliverable</li>
+      <li>Endpoint: <code>GET /api/sessions/{session_id}/cumulative/export?format={md|pdf|docx}</code></li>
     </ul>
   </div>
 
@@ -716,27 +724,33 @@
 
   <h3>Environment Variables (<code>.env</code>)</h3>
   <p>Copy <code>.env.example</code> to <code>.env</code> and fill in your API keys:</p>
-  <pre><code># OpenAI
+  <pre><code># Provider: "openai", "anthropic", "gemini", or "openaicompatible"
+API_PROVIDER=openai
+
+# 1. OpenAI
 OPENAI_API_KEY=sk-proj-your_openai_key
 OPENAI_MODEL=gpt-4o
 OPENAI_TEMPERATURE=0.7
 OPENAI_MAX_TOKENS=4096
 
-# Groq (free tier available)
-API_PROVIDER=groq
-GROQ_API_KEY=gsk_your_groq_key
-GROQ_MODEL=llama-3.3-70b-versatile
+# 2. Anthropic Claude
+ANTHROPIC_API_KEY=sk-ant-your_anthropic_key
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
 
-# Nararouter
-NARAROUTER_API_KEY=sk_nry_your_nararouter_key
-NARAROUTER_MODEL=agnes-2.5-flash
-NARAROUTER_BASE_URL=https://router.bynara.id/v1</code></pre>
+# 3. Google Gemini
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-1.5-pro
+
+# 4. OpenAI-Compatible (Ollama, vLLM, DeepSeek, Groq, LMStudio)
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:11434/v1
+OPENAI_COMPATIBLE_MODEL=llama3.3:70b
+OPENAI_COMPATIBLE_API_KEY=optional_key</code></pre>
 
   <h3>Key Configuration Values (<code>harness/config.py</code>)</h3>
   <table>
     <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
     <tbody>
-      <tr><td><code>API_PROVIDER</code></td><td><code>"openai"</code></td><td>Default provider: <code>openai</code>, <code>groq</code>, or <code>nararouter</code></td></tr>
+      <tr><td><code>API_PROVIDER</code></td><td><code>"openai"</code></td><td>Default provider: <code>openai</code>, <code>anthropic</code>, <code>gemini</code>, or <code>openaicompatible</code></td></tr>
       <tr><td><code>USE_JSON_OUTPUT</code></td><td><code>True</code></td><td>Request JSON-formatted responses from the LLM</td></tr>
       <tr><td><code>COMPRESS_PHASE_OUTPUTS</code></td><td><code>True</code></td><td>Truncate long outputs before passing to next phase</td></tr>
       <tr><td><code>OUTPUT_COMPRESSION_THRESHOLD</code></td><td><code>6000</code></td><td>Max tokens for inter-phase output transfer</td></tr>

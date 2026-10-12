@@ -612,6 +612,45 @@ async def export_phase_output(session_id: str, phase: int, format: str = Query("
         )
 
 
+@app.get("/api/sessions/{session_id}/cumulative/export")
+async def export_cumulative_output(session_id: str, format: str = Query("md", pattern="^(md|pdf|docx)$")):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    sess = sessions[session_id]
+    content = sess["output_store"].load_cumulative()
+    if not content:
+        sess["output_store"].rebuild_cumulative()
+        content = sess["output_store"].load_cumulative()
+
+    if not content:
+        raise HTTPException(status_code=400, detail="No completed phase output found to export cumulative document.")
+
+    title = "Full Patent Dossier — Cumulative Output"
+    filename = f"patent_cumulative_dossier_{session_id}"
+
+    if format == "md":
+        return PlainTextResponse(
+            content=content,
+            media_type="text/markdown",
+            headers={"Content-Disposition": f"attachment; filename={filename}.md"}
+        )
+    elif format == "pdf":
+        pdf_bytes = _generate_pdf(content, title)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}.pdf"}
+        )
+    elif format == "docx":
+        docx_bytes = _generate_docx(content, title)
+        return Response(
+            content=docx_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={filename}.docx"}
+        )
+
+
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
 if os.path.isdir(frontend_dir):
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

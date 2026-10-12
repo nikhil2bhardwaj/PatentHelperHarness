@@ -6,7 +6,7 @@ The web app provides a browser-based UI for running the 13-phase automotive R&D 
 
 - **Backend**: FastAPI server (Python) serving the API and static frontend files
 - **Frontend**: React + TailwindCSS single-page app (pre-built, served by backend)
-- **API Providers**: Groq, OpenAI, Nararouter (selectable per session)
+- **API Providers**: OpenAI (GPT-4o), Anthropic (Claude 3.5), Google Gemini (1.5 Pro), OpenAI-Compatible (Ollama, vLLM, DeepSeek, Groq), and zero-cost Mock Mode
 
 ---
 
@@ -138,22 +138,24 @@ Stop-Process -Id <PID>
 
 ### Start Screen
 
-1. **Initial Input** - Enter a topic (e.g., "Battery thermal management for EVs") or leave empty for autonomous mode
-2. **API Provider** - Select Groq, OpenAI, Nararouter, or Mock (no API needed)
-3. **Execution Mode**:
-   - **Normal** - Review each phase output before proceeding (gate panel with Accept/Edit/Feedback/Rerun/Exit)
+1. **Initial Input** - Enter a topic (e.g., "Battery thermal management for EVs") or click one of the quick presets, or leave empty for autonomous mode
+2. **API Provider** - Select **OpenAI**, **Anthropic**, **Gemini**, **Custom** (OpenAI-Compatible), or **Mock Mode** (no API key needed)
+3. **API Key Entry** - Enter an API key directly in the web UI for that session (with password show/hide toggle), or leave blank to fall back to the server `.env` configuration
+4. **Execution Mode**:
+   - **Normal (Human in Loop)** - Review each phase output before proceeding (gate panel with Accept/Refine/Feedback/Rerun/Save & Exit)
    - **Autonomous** - All 13 phases run automatically without manual review
-4. Click **Start Session**
+5. Click **Start Patent Pipeline**
 
 ### Normal Mode
 
 - Click **Run Phase N** to start each phase
 - After each phase completes, a **gate panel** appears at the bottom with options:
-  - **Accept** - Use output as-is, proceed to next phase
-  - **Edit** - Modify output before proceeding
-  - **Feedback** - Provide feedback for the next phase
-  - **Save & Exit** - Save session and exit
+  - **Accept & Advance** - Use output as-is, proceed to next phase
+  - **Refine** - Inline editor to modify output before proceeding
+  - **Feedback** - Provide targeted guidance for the next phase prompt
   - **Rerun** - Re-run the current phase
+  - **Cumulative** - View the cumulative compiled disclosure document
+  - **Save & Exit** - Save session state safely and exit
 - Click completed phases in the left sidebar to review past outputs
 - Click **Go to Phase N** to return to the active phase
 
@@ -164,15 +166,23 @@ Stop-Process -Id <PID>
 - If stopped, the current phase output is shown with the gate panel for manual review
 - On error, auto-run stops and shows a **Retry** button
 
-### Output Views
+### Output Views & Exporting
 
 Each phase output can be viewed in two formats:
-- **Formatted** - Human-readable rendering of JSON output with color-coded sections
+- **Formatted** - Human-readable rendering of JSON output with color-coded claim breakdown
 - **Raw JSON** - Original JSON with syntax highlighting
 
-### Cumulative Output
+#### Phase Deliverable Export
+- Download any individual phase deliverable using the header buttons:
+  - **Phase: `.md`** - Structured Markdown document
+  - **Phase: `.pdf`** - Multi-page PDF with formatted typography
+  - **Phase: `.docx`** - Microsoft Word OpenXML document
 
-After all phases complete, click **View Cumulative Output** to see the combined results from all phases in a modal overlay.
+#### Full Cumulative Session Dossier Export
+- Download the complete multi-phase compiled patent disclosure dossier at any time:
+  - Direct 1-click header buttons: **`Dossier: .pdf .docx .md`**
+  - Inside the **Cumulative Patent Document** modal: **`Export Dossier: .pdf .docx .md`**
+  - Includes line index mappings, all phase analyses, claim trees, and strategic recommendations in a single unified document
 
 ---
 
@@ -182,12 +192,16 @@ After all phases complete, click **View Cumulative Output** to see the combined 
 |--------|----------|-------------|
 | `GET` | `/api/health` | Health check |
 | `GET` | `/api/phases` | List all 13 phases |
-| `POST` | `/api/sessions` | Start a new session |
+| `POST` | `/api/sessions` | Start a new session (`provider`, `api_key`, `base_url`, `model`, `mock`) |
 | `POST` | `/api/sessions/{id}/run/{phase}` | Run a specific phase |
-| `POST` | `/api/sessions/{id}/gate` | Submit gate decision (accept/edit/feedback/exit/rerun) |
-| `GET` | `/api/sessions/{id}` | Get session status |
-| `GET` | `/api/sessions/{id}/cumulative` | Get cumulative output from all phases |
+| `POST` | `/api/sessions/{id}/gate` | Submit gate decision (`accept`, `edit`, `feedback`, `exit`, `rerun`) |
+| `GET` | `/api/sessions/{id}` | Get session status and phase outputs |
+| `GET` | `/api/sessions/{id}/cumulative` | Get cumulative output and line-index from all phases |
 | `GET` | `/api/sessions/{id}/phase/{phase}` | Get a specific phase's output |
+| `GET` | `/api/sessions/{id}/phase/{phase}/export?format={md\|pdf\|docx}` | Download individual phase deliverable (`md`, `pdf`, `docx`) |
+| `GET` | `/api/sessions/{id}/cumulative/export?format={md\|pdf\|docx}` | Download complete cumulative patent dossier (`pdf`, `docx`, `md`) |
+| `GET` | `/api/sessions/list` | List saved session checkpoints |
+| `POST` | `/api/sessions/resume` | Resume a session from checkpoint directory |
 
 ---
 

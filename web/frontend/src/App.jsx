@@ -3,7 +3,7 @@ import {
   Play, Check, Edit3, MessageSquare, Save, RotateCcw,
   Loader2, ChevronRight, Cpu, Eye, FileJson, AlignLeft,
   Zap, X, Square, FolderOpen, Clock, FileText, FileType,
-  Link2, Sparkles, Copy, Layers, AlertCircle
+  Link2, Sparkles, Copy, Layers, AlertCircle, Download, KeyRound
 } from 'lucide-react'
 import ReadableOutput from './ReadableOutput.jsx'
 
@@ -312,6 +312,8 @@ export default function App() {
   const [customModel, setCustomModel] = useState('')
   const [customBaseUrl, setCustomBaseUrl] = useState('')
   const [customApiKey, setCustomApiKey] = useState('')
+  const [providerApiKey, setProviderApiKey] = useState('')
+  const [showApiKey, setShowApiKey] = useState(false)
   const [showStart, setShowStart] = useState(true)
   const [activePhase, setActivePhase] = useState(0)
   const [viewingPhase, setViewingPhase] = useState(null)
@@ -353,15 +355,16 @@ export default function App() {
   const startSession = async () => {
     setError(null)
     try {
+      const activeKey = provider === 'openaicompatible' ? customApiKey : providerApiKey
       const res = await fetch(`${API}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_input: userInput,
           provider,
-          model: customModel.trim() || undefined,
-          base_url: customBaseUrl.trim() || undefined,
-          api_key: customApiKey.trim() || undefined,
+          model: (provider === 'openaicompatible' ? customModel.trim() : undefined) || undefined,
+          base_url: (provider === 'openaicompatible' ? customBaseUrl.trim() : undefined) || undefined,
+          api_key: activeKey.trim() || undefined,
           mock: mockMode
         }),
       })
@@ -638,6 +641,31 @@ export default function App() {
     setExporting(false)
   }
 
+  const exportCumulative = async (format) => {
+    if (!sessionId) return
+    setExporting(true)
+    try {
+      const res = await fetch(`${API}/sessions/${sessionId}/cumulative/export?format=${format}`)
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.detail || 'Cumulative export failed')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = res.headers.get('content-disposition')?.split('filename=')[1]?.replace(/"/g, '') || `patent_cumulative_dossier_${sessionId}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      triggerToast(`Exported full dossier .${format}`)
+    } catch (e) {
+      setError(e.message)
+    }
+    setExporting(false)
+  }
+
   const currentPhaseObj = phases.find(p => p.phase === currentPhase)
   const phaseName = currentPhaseObj?.name || `Phase ${currentPhase}`
 
@@ -778,6 +806,42 @@ export default function App() {
                       placeholder="API Key (optional)"
                       className="text-[11px] p-1.5 bg-white border border-slate-200 rounded-md focus:border-slate-900 focus:outline-none"
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Direct API Key Entry for OpenAI / Anthropic / Gemini */}
+              {!mockMode && provider !== 'openaicompatible' && (
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 animate-fade-in text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <KeyRound className="w-3 h-3 text-slate-500" />
+                      {provider === 'openai' && 'OpenAI API Key (GPT-4o)'}
+                      {provider === 'anthropic' && 'Anthropic Claude API Key (3.5 Sonnet)'}
+                      {provider === 'gemini' && 'Google Gemini API Key (1.5 Pro)'}
+                    </div>
+                    <span className="text-[10px] text-slate-400">Optional if in .env</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showApiKey ? "text" : "password"}
+                      value={providerApiKey}
+                      onChange={e => setProviderApiKey(e.target.value)}
+                      placeholder={
+                        provider === 'openai' ? 'sk-proj-... (or leave blank to use server .env)' :
+                        provider === 'anthropic' ? 'sk-ant-api03-... (or leave blank to use server .env)' :
+                        'AIzaSy... (or leave blank to use server .env)'
+                      }
+                      className="w-full text-[11px] p-1.5 pr-8 bg-white border border-slate-200 rounded-md focus:border-slate-900 focus:outline-none font-mono text-slate-800 placeholder:text-slate-400 placeholder:font-sans"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      title={showApiKey ? "Hide API key" : "Show API key"}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               )}
@@ -967,14 +1031,34 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Export format buttons */}
-            <div className="flex items-center bg-slate-100/80 rounded-lg p-0.5 border border-slate-200/80">
+            {/* Phase Export Buttons */}
+            <div className="flex items-center bg-slate-100/90 rounded-lg p-0.5 border border-slate-200/90 shadow-2xs">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase px-1.5 hidden sm:inline">Phase:</span>
               {['md', 'pdf', 'docx'].map(fmt => (
                 <button
                   key={fmt}
                   onClick={() => exportPhase(fmt)}
                   disabled={exporting}
-                  className="px-2 py-0.5 text-[11px] font-mono text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-1.5 py-0.5 text-[11px] font-mono text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-50 cursor-pointer"
+                  title={`Export current phase output as .${fmt}`}
+                >
+                  .{fmt}
+                </button>
+              ))}
+            </div>
+
+            {/* Full Cumulative Dossier Export */}
+            <div className="flex items-center bg-blue-50/90 rounded-lg p-0.5 border border-blue-200/80 shadow-2xs">
+              <span className="text-[10px] font-semibold text-blue-700 uppercase px-1.5 flex items-center gap-1">
+                <Download className="w-3 h-3 text-blue-600" /> <span className="hidden sm:inline">Dossier:</span>
+              </span>
+              {['pdf', 'docx', 'md'].map(fmt => (
+                <button
+                  key={fmt}
+                  onClick={() => exportCumulative(fmt)}
+                  disabled={exporting}
+                  className="px-1.5 py-0.5 text-[11px] font-mono font-medium text-blue-700 hover:text-blue-900 hover:bg-white rounded transition-colors disabled:opacity-50 cursor-pointer"
+                  title={`Export complete cumulative session as .${fmt}`}
                 >
                   .{fmt}
                 </button>
@@ -984,6 +1068,7 @@ export default function App() {
             <button
               onClick={viewCumulative}
               className="btn-secondary text-xs py-1 px-2.5"
+              title="View Cumulative Document"
             >
               <Layers className="w-3.5 h-3.5" /> Cumulative
             </button>
@@ -1245,6 +1330,24 @@ export default function App() {
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Cumulative Patent Document</h3>
               </div>
               <div className="flex items-center gap-2">
+                {/* 1-click Cumulative Dossier Exports */}
+                <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 shadow-2xs">
+                  <span className="text-[10px] font-semibold text-slate-600 uppercase px-1.5 flex items-center gap-1">
+                    <Download className="w-3 h-3 text-slate-500" /> Export Dossier:
+                  </span>
+                  {['pdf', 'docx', 'md'].map(fmt => (
+                    <button
+                      key={fmt}
+                      onClick={() => exportCumulative(fmt)}
+                      disabled={exporting}
+                      className="px-2 py-0.5 text-xs font-mono font-medium rounded hover:bg-white text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                      title={`Export full cumulative dossier as .${fmt}`}
+                    >
+                      .{fmt}
+                    </button>
+                  ))}
+                </div>
+
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(cumulativeContent)
