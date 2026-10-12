@@ -54,7 +54,7 @@ Equipped with both a rich terminal CLI and a modern, ambient-styled React web ap
 <p align="center">
   <img src="docs/images/cumulative_modal.png" alt="Cumulative Indexed Patent Document" width="850"/>
   <br/>
-  <em>Cumulative multi-phase indexed document review modal with line indexing and 1-click Dossier Export (.pdf, .docx, .md)</em>
+  <em>Cumulative multi-phase patent dossier modal with Document View formatting, raw JSON toggle, and 1-click publication export (.pdf, .docx, .md)</em>
 </p>
 
 ---

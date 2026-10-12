@@ -305,6 +305,9 @@ export default function App() {
   const [error, setError] = useState(null)
   const [showCumulative, setShowCumulative] = useState(false)
   const [cumulativeContent, setCumulativeContent] = useState('')
+  const [cumulativeViewMode, setCumulativeViewMode] = useState('document')
+  const [cumulativePhases, setCumulativePhases] = useState([])
+  const [cumulativeMarkdown, setCumulativeMarkdown] = useState('')
   const [viewMode, setViewMode] = useState('formatted')
   const [userInput, setUserInput] = useState('')
   const [provider, setProvider] = useState('openai')
@@ -601,7 +604,10 @@ export default function App() {
     try {
       const res = await fetch(`${API}/sessions/${sessionId}/cumulative`)
       const data = await res.json()
-      setCumulativeContent(data.content)
+      setCumulativeContent(data.content || '')
+      setCumulativeMarkdown(data.document_markdown || '')
+      setCumulativePhases(data.phases_data || [])
+      setCumulativeViewMode('document')
       setShowCumulative(true)
     } catch (e) {
       setError(e.message)
@@ -1323,17 +1329,44 @@ export default function App() {
       {/* Cumulative Output Modal */}
       {showCumulative && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setShowCumulative(false)}>
-          <div className="bg-white/95 backdrop-blur-xl w-full max-w-3xl h-[80vh] rounded-2xl flex flex-col border border-white/80 shadow-2xl animate-fade-in" onClick={e => e.stopPropagation()}>
-            <div className="border-b border-slate-200 px-5 py-3.5 flex items-center justify-between">
+          <div className="bg-white/95 backdrop-blur-xl w-full max-w-4xl h-[85vh] rounded-2xl flex flex-col border border-white/80 shadow-2xl animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="border-b border-slate-200 px-5 py-3.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-slate-700" />
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Cumulative Patent Document</h3>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Cumulative Patent Dossier</h3>
+                <span className="badge-pill badge-slate text-[10px]">
+                  {cumulativePhases.length} {cumulativePhases.length === 1 ? 'Phase' : 'Phases'}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
+                {/* View Mode Toggle: Document View vs Raw JSON */}
+                <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                  <button
+                    onClick={() => setCumulativeViewMode('document')}
+                    className={`px-2 py-0.5 text-xs font-medium rounded transition-all cursor-pointer flex items-center gap-1.5 ${
+                      cumulativeViewMode === 'document'
+                        ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <AlignLeft className="w-3 h-3" /> Document View
+                  </button>
+                  <button
+                    onClick={() => setCumulativeViewMode('raw')}
+                    className={`px-2 py-0.5 text-xs font-medium rounded transition-all cursor-pointer flex items-center gap-1.5 ${
+                      cumulativeViewMode === 'raw'
+                        ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <FileJson className="w-3 h-3" /> Raw JSON
+                  </button>
+                </div>
+
                 {/* 1-click Cumulative Dossier Exports */}
                 <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 shadow-2xs">
                   <span className="text-[10px] font-semibold text-slate-600 uppercase px-1.5 flex items-center gap-1">
-                    <Download className="w-3 h-3 text-slate-500" /> Export Dossier:
+                    <Download className="w-3 h-3 text-slate-500" /> Export:
                   </span>
                   {['pdf', 'docx', 'md'].map(fmt => (
                     <button
@@ -1341,7 +1374,7 @@ export default function App() {
                       onClick={() => exportCumulative(fmt)}
                       disabled={exporting}
                       className="px-2 py-0.5 text-xs font-mono font-medium rounded hover:bg-white text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
-                      title={`Export full cumulative dossier as .${fmt}`}
+                      title={`Export full cumulative dossier in Document View as .${fmt}`}
                     >
                       .{fmt}
                     </button>
@@ -1350,7 +1383,8 @@ export default function App() {
 
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(cumulativeContent)
+                    const toCopy = cumulativeViewMode === 'document' ? (cumulativeMarkdown || cumulativeContent) : cumulativeContent
+                    navigator.clipboard.writeText(toCopy)
                     triggerToast('Copied to clipboard')
                   }}
                   className="btn-secondary text-xs py-1 px-2.5"
@@ -1362,10 +1396,48 @@ export default function App() {
                 </button>
               </div>
             </div>
+
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-slate-50/70">
-              <pre className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed">
-                {cumulativeContent || 'No cumulative output generated yet.'}
-              </pre>
+              {cumulativeViewMode === 'document' ? (
+                <div className="space-y-6 max-w-3xl mx-auto">
+                  {cumulativePhases.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400 text-xs font-sans">
+                      No completed phases available yet.
+                    </div>
+                  ) : (
+                    cumulativePhases.map((cp) => (
+                      <div key={cp.phase} className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+                        <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-md bg-slate-900 text-white text-xs font-mono font-semibold flex items-center justify-center">
+                              {cp.phase}
+                            </span>
+                            <span className="text-xs font-bold text-slate-900 tracking-tight">
+                              {cp.name}
+                            </span>
+                          </div>
+                          <span className="badge-pill badge-emerald text-[10px]">
+                            Completed
+                          </span>
+                        </div>
+                        <div className="p-4">
+                          {cp.parsed ? (
+                            <ReadableOutput data={cp.parsed} />
+                          ) : (
+                            <pre className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed">
+                              {cp.output}
+                            </pre>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                <pre className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed">
+                  {cumulativeContent || 'No cumulative output generated yet.'}
+                </pre>
+              )}
             </div>
           </div>
         </div>

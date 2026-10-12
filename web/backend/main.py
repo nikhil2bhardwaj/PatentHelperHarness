@@ -240,6 +240,42 @@ async def gate_decision(session_id: str, req: GateRequest):
     else:
         raise HTTPException(status_code=400, detail=f"Unknown action: {req.action}")
 
+@app.get("/api/sessions/list")
+async def list_saved_sessions():
+    from harness.config import OUTPUTS_DIR
+    session_dirs = OutputStore.list_sessions()
+    result = []
+    for sdir in session_dirs:
+        store = OutputStore(session_dir=sdir)
+        state = store.load_session_state()
+        if state:
+            result.append({
+                "session_dir": sdir,
+                "session_name": os.path.basename(sdir),
+                "current_phase": state.get("current_phase", 0),
+                "completed_phases": state.get("completed_phases", []),
+                "user_input": state.get("user_input", ""),
+                "model": state.get("model", ""),
+                "provider": state.get("provider", "groq"),
+            })
+        else:
+            # No state file - check if any phase outputs exist
+            completed = []
+            for p in range(13):
+                if store.load_phase_output(p):
+                    completed.append(p)
+            if completed:
+                result.append({
+                    "session_dir": sdir,
+                    "session_name": os.path.basename(sdir),
+                    "current_phase": max(completed) + 1 if max(completed) < 12 else 12,
+                    "completed_phases": completed,
+                    "user_input": "",
+                    "model": "",
+                    "provider": "groq",
+                })
+    return {"sessions": result}
+
 
 @app.get("/api/sessions/{session_id}")
 async def get_session(session_id: str):
@@ -264,10 +300,38 @@ async def get_cumulative(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
 
     sess = sessions[session_id]
-    content = sess["output_store"].load_cumulative()
-    if not content:
-        return {"content": ""}
-    return {"content": content}
+    sess["session_id"] = session_id
+    raw_content = sess["output_store"].load_cumulative()
+    if not raw_content:
+        sess["output_store"].rebuild_cumulative()
+        raw_content = sess["output_store"].load_cumulative() or ""
+
+    document_markdown = _build_cumulative_document_markdown(sess)
+
+    output_store = sess["output_store"]
+    phases_data = []
+    for p in range(13):
+        out = sess["phase_outputs"].get(p)
+        if not out and output_store:
+            out = output_store.load_phase_output(p, prefer_edited=True)
+        if out:
+            p_parsed = None
+            try:
+                p_parsed = json.loads(out)
+            except Exception:
+                pass
+            phases_data.append({
+                "phase": p,
+                "name": PHASE_NAMES.get(p, f"Phase {p}"),
+                "parsed": p_parsed,
+                "output": out,
+            })
+
+    return {
+        "content": raw_content,
+        "document_markdown": document_markdown,
+        "phases_data": phases_data,
+    }
 
 
 @app.get("/api/sessions/{session_id}/phase/{phase}")
@@ -338,42 +402,6 @@ def _save_state(sess: dict):
     }
     sess["output_store"].save_session_state(state)
 
-
-@app.get("/api/sessions/list")
-async def list_saved_sessions():
-    from harness.config import OUTPUTS_DIR
-    session_dirs = OutputStore.list_sessions()
-    result = []
-    for sdir in session_dirs:
-        store = OutputStore(session_dir=sdir)
-        state = store.load_session_state()
-        if state:
-            result.append({
-                "session_dir": sdir,
-                "session_name": os.path.basename(sdir),
-                "current_phase": state.get("current_phase", 0),
-                "completed_phases": state.get("completed_phases", []),
-                "user_input": state.get("user_input", ""),
-                "model": state.get("model", ""),
-                "provider": state.get("provider", "groq"),
-            })
-        else:
-            # No state file - check if any phase outputs exist
-            completed = []
-            for p in range(13):
-                if store.load_phase_output(p):
-                    completed.append(p)
-            if completed:
-                result.append({
-                    "session_dir": sdir,
-                    "session_name": os.path.basename(sdir),
-                    "current_phase": max(completed) + 1 if max(completed) < 12 else 12,
-                    "completed_phases": completed,
-                    "user_input": "",
-                    "model": "",
-                    "provider": "groq",
-                })
-    return {"sessions": result}
 
 
 @app.post("/api/sessions/resume")
@@ -455,35 +483,240 @@ async def resume_session(req: ResumeSessionRequest):
     }
 
 
-def _json_to_markdown(data, depth=0, phase_name=""):
+def _format_field_value(val, indent_level: int = 0) -> List[str]:
+    """Recursively formats any arbitrary JSON value into bulleted Document View markdown,
+    avoiding raw braces, brackets, or python str representations.
+    """
+    indent = "  " * indent_level
+    res = []
+    if isinstance(val, dict):
+        for k, v in val.items():
+            clean_k = re.sub(r'^\d+_', '', str(k)).replace('_', ' ').title()
+            if isinstance(v, (dict, list)):
+                res.append(f"{indent}- **{clean_k}:**")
+                res.extend(_format_field_value(v, indent_level + 1))
+            else:
+                res.append(f"{indent}- **{clean_k}:** {v}")
+    elif isinstance(val, list):
+        for item in val:
+            if isinstance(item, dict):
+                title = item.get("name") or item.get("title") or item.get("id") or item.get("element") or item.get("claim_number")
+                if title:
+                    clean_title = re.sub(r'^\d+_', '', str(title)).replace('_', ' ').title()
+                    res.append(f"{indent}- **{clean_title}**")
+                    sub_dict = {k: v for k, v in item.items() if k not in ["name", "title", "id", "element", "claim_number"]}
+                    res.extend(_format_field_value(sub_dict, indent_level + 1))
+                else:
+                    res.extend(_format_field_value(item, indent_level + 1))
+            elif isinstance(item, list):
+                res.extend(_format_field_value(item, indent_level + 1))
+            else:
+                res.append(f"{indent}- {item}")
+    else:
+        res.append(f"{indent}{val}")
+    return res
+
+
+def _format_document_view(data, phase_name: str = "", phase_num: Optional[int] = None) -> str:
+    """Transforms raw or parsed phase JSON into executive-style Document View Markdown.
+    Eliminates raw JSON braces, brackets, quotes, and numeric prefixes, producing
+    clean headings, executive summaries, claim blocks, and structured bullet lists.
+    """
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except Exception:
+            return data
+
+    if not isinstance(data, dict):
+        return str(data)
+
     lines = []
-    if depth == 0 and phase_name:
-        lines.append(f"# Phase Output: {phase_name}\n")
-    if isinstance(data, dict):
-        for key, val in data.items():
-            formatted_key = re.sub(r'^\d+_', '', str(key)).replace('_', ' ').title()
+    p_header = f"Phase {phase_num}: {phase_name}" if phase_num is not None else phase_name
+    if p_header:
+        lines.append(f"## {p_header}\n")
+
+    # 1. Executive Summary
+    summary_keys = ["summary", "0_summary", "overview", "intent", "executive_summary", "abstract"]
+    for k in summary_keys:
+        if k in data and data[k]:
+            lines.append("### Executive Summary")
+            val = data[k]
             if isinstance(val, dict):
-                lines.append(f"{'#' * (depth + 2)} {formatted_key}\n")
-                lines.append(_json_to_markdown(val, depth + 1))
+                for sk, sv in val.items():
+                    clean_sk = re.sub(r'^\d+_', '', str(sk)).replace('_', ' ').title()
+                    if isinstance(sv, (dict, list)):
+                        lines.append(f"**{clean_sk}:**")
+                        lines.extend(_format_field_value(sv, 1))
+                    else:
+                        lines.append(f"**{clean_sk}:** {sv}")
             elif isinstance(val, list):
-                lines.append(f"{'#' * (depth + 2)} {formatted_key}\n")
+                for item in val:
+                    lines.append(f"- {item}")
+            else:
+                lines.append(f"> {val}\n")
+            lines.append("")
+            break
+
+    # 2. Claims (if present, e.g. Phase 6, 10, etc.)
+    claims_keys = ["claims", "patent_claims", "claim_set", "independent_claims", "dependent_claims"]
+    for ck in claims_keys:
+        if ck in data and isinstance(data[ck], (list, dict)):
+            lines.append("### Patent Claims & Technical Scope")
+            c_val = data[ck]
+            if isinstance(c_val, list):
+                for idx, c in enumerate(c_val, 1):
+                    if isinstance(c, dict):
+                        c_num = c.get("claim_number", c.get("number", idx))
+                        c_type = c.get("claim_type", c.get("type", "Claim"))
+                        c_text = c.get("claim_text", c.get("text", c.get("description", "")))
+                        lines.append(f"#### Claim {c_num} ({c_type})")
+                        if c_text:
+                            lines.append(f"> {c_text}\n")
+                        for prop_k, prop_v in c.items():
+                            if prop_k not in ["claim_number", "number", "claim_type", "type", "claim_text", "text", "description"]:
+                                clean_prop = re.sub(r'^\d+_', '', str(prop_k)).replace('_', ' ').title()
+                                if isinstance(prop_v, (dict, list)):
+                                    lines.append(f"- **{clean_prop}:**")
+                                    lines.extend(_format_field_value(prop_v, 1))
+                                else:
+                                    lines.append(f"- **{clean_prop}:** {prop_v}")
+                        lines.append("")
+                    else:
+                        lines.append(f"#### Claim {idx}")
+                        lines.append(f"> {c}\n")
+            elif isinstance(c_val, dict):
+                for c_num, c_body in c_val.items():
+                    lines.append(f"#### {c_num}")
+                    if isinstance(c_body, dict):
+                        lines.extend(_format_field_value(c_body, 0))
+                    else:
+                        lines.append(f"> {c_body}\n")
+            lines.append("")
+
+    # 3. Prior Art / Landscape / Competitors (e.g. Phase 1, 5)
+    art_keys = ["prior_art", "patent_landscape", "prior_art_matrix", "nearest_prior_art", "existing_patents"]
+    for ak in art_keys:
+        if ak in data and data[ak]:
+            lines.append("### Prior Art & Landscape Analysis")
+            val = data[ak]
+            if isinstance(val, list):
                 for item in val:
                     if isinstance(item, dict):
-                        lines.append(_json_to_markdown(item, depth + 2))
+                        title = item.get("title", item.get("patent_number", item.get("patent_id", "Prior Art Reference")))
+                        lines.append(f"#### {title}")
+                        for ik, iv in item.items():
+                            clean_ik = re.sub(r'^\d+_', '', str(ik)).replace('_', ' ').title()
+                            if isinstance(iv, (dict, list)):
+                                lines.append(f"- **{clean_ik}:**")
+                                lines.extend(_format_field_value(iv, 1))
+                            else:
+                                lines.append(f"- **{clean_ik}:** {iv}")
+                        lines.append("")
                     else:
                         lines.append(f"- {item}")
-                lines.append("")
+            elif isinstance(val, dict):
+                lines.extend(_format_field_value(val, 0))
+            lines.append("")
+
+    # 4. Process all remaining sections
+    handled_keys = set(summary_keys + claims_keys + art_keys + ["phase", "phase_name", "status", "note"])
+    for key, val in data.items():
+        if key.lower() in handled_keys or val is None or val == "":
+            continue
+
+        clean_key = re.sub(r'^\d+_', '', str(key)).replace('_', ' ').title()
+
+        # Special subheadings
+        if key in ["inputs_for_next_phase", "next_phase_inputs"]:
+            lines.append("### Inputs For Next Phase")
+            lines.extend(_format_field_value(val, 0))
+            lines.append("")
+            continue
+
+        if key in ["decision", "phase_decision"]:
+            lines.append("### Phase Decision")
+            if isinstance(val, dict):
+                lines.extend(_format_field_value(val, 0))
             else:
-                lines.append(f"**{formatted_key}:** {val}\n")
-    elif isinstance(data, list):
-        for item in data:
-            if isinstance(item, dict):
-                lines.append(_json_to_markdown(item, depth + 1))
-            else:
-                lines.append(f"- {item}")
-    else:
-        lines.append(str(data))
-    return "\n".join(lines)
+                lines.append(f"**Final Decision:** {val}")
+            lines.append("")
+            continue
+
+        # General dictionary / list / primitive
+        if isinstance(val, dict):
+            lines.append(f"### {clean_key}")
+            lines.extend(_format_field_value(val, 0))
+            lines.append("")
+
+        elif isinstance(val, list):
+            lines.append(f"### {clean_key}")
+            lines.extend(_format_field_value(val, 0))
+            lines.append("")
+
+        else:
+            lines.append(f"**{clean_key}:** {val}\n")
+
+    return "\n".join(lines).strip()
+
+
+def _json_to_markdown(data, depth=0, phase_name=""):
+    """Backward-compatible wrapper routing to Document View style."""
+    return _format_document_view(data, phase_name=phase_name)
+
+
+def _build_cumulative_document_markdown(sess: dict) -> str:
+    """Assembles all completed phases into a single unified Document View Dossier."""
+    session_id = sess.get("session_id", "session")
+    user_input = sess.get("user_input", "") or "Patent Ideation Pipeline"
+    provider = sess.get("provider", "openai")
+    api_client = sess.get("api_client")
+    model = getattr(api_client, "model", "default")
+    phase_outputs = sess.get("phase_outputs", {})
+    output_store = sess.get("output_store")
+
+    all_phases = {}
+    for p in range(13):
+        out = phase_outputs.get(p)
+        if not out and output_store:
+            out = output_store.load_phase_output(p, prefer_edited=True)
+        if out:
+            all_phases[p] = out
+
+    if not all_phases:
+        return "# Cumulative Patent Disclosure Dossier\n\nNo completed phases available yet."
+
+    lines = []
+    lines.append("# Comprehensive Patent Ideation & Disclosure Dossier\n")
+    lines.append(f"**Invention Concept:** {user_input}  ")
+    lines.append(f"**Session ID:** `{session_id}` | **Engine:** {provider.upper()} ({model})  ")
+    lines.append(f"**Compiled Phases:** {len(all_phases)} of 13 completed\n")
+    lines.append("---\n")
+
+    lines.append("## Executive Dossier Index\n")
+    for p in sorted(all_phases.keys()):
+        p_name = PHASE_NAMES.get(p, f"Phase {p}")
+        lines.append(f"- **Phase {p}:** {p_name}")
+    lines.append("\n---\n")
+
+    for p in sorted(all_phases.keys()):
+        p_name = PHASE_NAMES.get(p, f"Phase {p}")
+        raw_content = all_phases[p]
+        parsed = None
+        try:
+            parsed = json.loads(raw_content)
+        except Exception:
+            pass
+
+        if parsed:
+            formatted_phase = _format_document_view(parsed, phase_name=p_name, phase_num=p)
+            lines.append(formatted_phase)
+        else:
+            lines.append(f"## Phase {p}: {p_name}\n\n{raw_content}")
+
+        lines.append("\n\n---\n")
+
+    return "\n".join(lines).strip()
 
 
 def _generate_pdf(markdown_text: str, phase_name: str) -> bytes:
@@ -497,8 +730,9 @@ def _generate_pdf(markdown_text: str, phase_name: str) -> bytes:
     # Document Header
     pdf.set_font("helvetica", 'B', 16)
     pdf.set_x(pdf.l_margin)
-    safe_phase = phase_name.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(epw, 8, f"Phase Output: {safe_phase}")
+    doc_title = phase_name if not phase_name.lower().startswith("phase ") else f"Phase Output: {phase_name}"
+    safe_title = doc_title.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(epw, 8, safe_title)
     pdf.ln(3)
 
     for line in markdown_text.split('\n'):
@@ -521,28 +755,43 @@ def _generate_pdf(markdown_text: str, phase_name: str) -> bytes:
         elif line_str.startswith('### '):
             pdf.set_font("helvetica", 'B', 11)
             safe_text = line_str[4:].encode('latin-1', 'replace').decode('latin-1')
-            pdf.multi_cell(epw, 6, safe_text)
+            pdf.multi_cell(epw, 5.5, safe_text)
             pdf.ln(1)
+        elif line_str.startswith('#### '):
+            pdf.set_font("helvetica", 'B', 10)
+            safe_text = line_str[5:].encode('latin-1', 'replace').decode('latin-1')
+            pdf.multi_cell(epw, 5, safe_text)
+            pdf.ln(0.5)
+        elif line_str.startswith('> '):
+            pdf.set_font("helvetica", 'I', 10)
+            pdf.set_x(pdf.l_margin + 4)
+            safe_text = line_str[2:].encode('latin-1', 'replace').decode('latin-1')
+            pdf.multi_cell(epw - 8, 4.8, safe_text)
+            pdf.ln(1)
+        elif line_str == '---':
+            pdf.set_draw_color(210, 215, 225)
+            pdf.line(pdf.l_margin, pdf.get_y(), pdf.l_margin + epw, pdf.get_y())
+            pdf.ln(2.5)
         elif line_str.startswith('- '):
             pdf.set_font("helvetica", '', 10)
             safe_text = ("- " + line_str[2:]).encode('latin-1', 'replace').decode('latin-1')
-            pdf.multi_cell(epw, 5, safe_text)
+            pdf.multi_cell(epw, 4.8, safe_text)
         else:
             clean = re.sub(r'\*\*(.+?)\*\*', r'\1', line_str)
             safe_text = clean.encode('latin-1', 'replace').decode('latin-1')
             pdf.set_font("helvetica", '', 10)
-            pdf.multi_cell(epw, 5, safe_text)
+            pdf.multi_cell(epw, 4.8, safe_text)
 
     return bytes(pdf.output())
 
 
 def _generate_docx(markdown_text: str, phase_name: str) -> bytes:
     from docx import Document
-    from docx.shared import Pt, Inches
     import io
 
     doc = Document()
-    doc.add_heading(f"Phase Output: {phase_name}", 0)
+    doc_title = phase_name if not phase_name.lower().startswith("phase ") else f"Phase Output: {phase_name}"
+    doc.add_heading(doc_title, 0)
 
     for line in markdown_text.split('\n'):
         if line.startswith('# '):
@@ -551,8 +800,14 @@ def _generate_docx(markdown_text: str, phase_name: str) -> bytes:
             doc.add_heading(line[3:], level=2)
         elif line.startswith('### '):
             doc.add_heading(line[4:], level=3)
+        elif line.startswith('#### '):
+            doc.add_heading(line[5:], level=4)
+        elif line.startswith('> '):
+            doc.add_paragraph(line[2:], style='Quote')
         elif line.startswith('- '):
             doc.add_paragraph(line[2:], style='List Bullet')
+        elif line.strip() == '---':
+            doc.add_paragraph('─' * 40)
         elif line.strip() == '':
             pass
         else:
@@ -583,9 +838,9 @@ async def export_phase_output(session_id: str, phase: int, format: str = Query("
         pass
 
     if parsed:
-        markdown = _json_to_markdown(parsed, phase_name=phase_name)
+        markdown = _format_document_view(parsed, phase_name=phase_name, phase_num=phase)
     else:
-        markdown = f"# Phase Output: {phase_name}\n\n{output}"
+        markdown = f"# Phase {phase}: {phase_name}\n\n{output}"
 
     safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', phase_name)
     filename = f"phase_{phase}_{safe_name}"
@@ -597,14 +852,14 @@ async def export_phase_output(session_id: str, phase: int, format: str = Query("
             headers={"Content-Disposition": f"attachment; filename={filename}.md"}
         )
     elif format == "pdf":
-        pdf_bytes = _generate_pdf(markdown, phase_name)
+        pdf_bytes = _generate_pdf(markdown, f"Phase {phase}: {phase_name}")
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={"Content-Disposition": f"attachment; filename={filename}.pdf"}
         )
     elif format == "docx":
-        docx_bytes = _generate_docx(markdown, phase_name)
+        docx_bytes = _generate_docx(markdown, f"Phase {phase}: {phase_name}")
         return Response(
             content=docx_bytes,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -618,32 +873,27 @@ async def export_cumulative_output(session_id: str, format: str = Query("md", pa
         raise HTTPException(status_code=404, detail="Session not found")
 
     sess = sessions[session_id]
-    content = sess["output_store"].load_cumulative()
-    if not content:
-        sess["output_store"].rebuild_cumulative()
-        content = sess["output_store"].load_cumulative()
+    sess["session_id"] = session_id
+    markdown = _build_cumulative_document_markdown(sess)
 
-    if not content:
-        raise HTTPException(status_code=400, detail="No completed phase output found to export cumulative document.")
-
-    title = "Full Patent Dossier — Cumulative Output"
+    title = "Comprehensive Patent Ideation & Disclosure Dossier"
     filename = f"patent_cumulative_dossier_{session_id}"
 
     if format == "md":
         return PlainTextResponse(
-            content=content,
+            content=markdown,
             media_type="text/markdown",
             headers={"Content-Disposition": f"attachment; filename={filename}.md"}
         )
     elif format == "pdf":
-        pdf_bytes = _generate_pdf(content, title)
+        pdf_bytes = _generate_pdf(markdown, title)
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={"Content-Disposition": f"attachment; filename={filename}.pdf"}
         )
     elif format == "docx":
-        docx_bytes = _generate_docx(content, title)
+        docx_bytes = _generate_docx(markdown, title)
         return Response(
             content=docx_bytes,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",

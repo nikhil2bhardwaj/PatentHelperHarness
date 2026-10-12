@@ -169,20 +169,20 @@ Stop-Process -Id <PID>
 ### Output Views & Exporting
 
 Each phase output can be viewed in two formats:
-- **Formatted** - Human-readable rendering of JSON output with color-coded claim breakdown
-- **Raw JSON** - Original JSON with syntax highlighting
+- **Document View (Formatted)** - Publication-quality rendering of phase output with executive summaries, claim breakdowns, prior art cards, and structured bullets (no raw JSON syntax).
+- **Raw JSON** - Original raw JSON with syntax highlighting for power users and auditing.
 
-#### Phase Deliverable Export
-- Download any individual phase deliverable using the header buttons:
-  - **Phase: `.md`** - Structured Markdown document
-  - **Phase: `.pdf`** - Multi-page PDF with formatted typography
-  - **Phase: `.docx`** - Microsoft Word OpenXML document
+#### Document View Phase Export
+- Download any individual phase deliverable in publication-grade Document View:
+  - **Phase: `.md`** - Clean Markdown with headings, blockquotes, and executive sections (no raw braces).
+  - **Phase: `.pdf`** - Multi-page PDF formatted directly from the Document View layout.
+  - **Phase: `.docx`** - Microsoft Word OpenXML document with formatted headings, lists, and quote blocks.
 
-#### Full Cumulative Session Dossier Export
-- Download the complete multi-phase compiled patent disclosure dossier at any time:
-  - Direct 1-click header buttons: **`Dossier: .pdf .docx .md`**
-  - Inside the **Cumulative Patent Document** modal: **`Export Dossier: .pdf .docx .md`**
-  - Includes line index mappings, all phase analyses, claim trees, and strategic recommendations in a single unified document
+#### Full Cumulative Session Dossier Export & Modal
+- View and download the complete multi-phase compiled patent disclosure dossier at any time:
+  - **Cumulative Modal:** Click **Cumulative** in the review gate or header to open the interactive dossier. Defaults to **Document View** with collapsible phase cards and a toggle to **Raw JSON**.
+  - **1-Click Dossier Exports:** Download the entire dossier in Document View using **`Dossier: .pdf .docx .md`** in the header or inside the modal.
+  - Compiles an Executive Dossier Index, session metadata, all completed phase analyses, patent claims, and strategic recommendations in a unified, executive-ready document.
 
 ---
 

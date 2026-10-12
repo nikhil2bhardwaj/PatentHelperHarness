@@ -558,7 +558,8 @@
       <tr><td><code>GET</code></td><td><code>/api/sessions/{id}</code></td><td>Get session metadata (current phase, completed phases, model)</td></tr>
       <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/cumulative</code></td><td>Get cumulative output across all phases</td></tr>
       <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/phase/{phase}</code></td><td>Get a specific phase's output</td></tr>
-      <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/phase/{phase}/export</code></td><td>Export phase output as <code>?format=md|pdf|docx</code></td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/phase/{phase}/export</code></td><td>Export phase output in Document View as <code>?format=md|pdf|docx</code></td></tr>
+      <tr><td><code>GET</code></td><td><code>/api/sessions/{id}/cumulative/export</code></td><td>Export full cumulative dossier in Document View as <code>?format=md|pdf|docx</code></td></tr>
       <tr><td><code>GET</code></td><td><code>/api/sessions/list</code></td><td>List all saved sessions from <code>outputs/</code></td></tr>
       <tr><td><code>POST</code></td><td><code>/api/sessions/resume</code></td><td>Resume a saved session (accepts <code>session_dir</code> path)</td></tr>
     </tbody>
@@ -579,12 +580,12 @@
 6. POST /api/sessions/resume → Reloads session from disk into memory</code></pre>
   </div>
 
-  <h3>Export Endpoint</h3>
-  <p>The <code>GET /api/sessions/{id}/phase/{phase}/export?format=md|pdf|docx</code> endpoint converts JSON phase output to downloadable files:</p>
+  <h3>Document View Export Endpoints</h3>
+  <p>Both Phase (<code>/phase/{phase}/export</code>) and Cumulative Dossier (<code>/cumulative/export</code>) export endpoints generate publication-quality <strong>Document View</strong> deliverables instead of raw JSON syntax:</p>
   <ul>
-    <li><strong><code>.md</code></strong>: JSON is converted to structured Markdown with headings, bullet points, and key-value pairs</li>
-    <li><strong><code>.pdf</code></strong>: Markdown is rendered to PDF using <code>fpdf2</code> with heading styles and bullet formatting</li>
-    <li><strong><code>.docx</code></strong>: Markdown is rendered to Word document using <code>python-docx</code> with native heading/bullet styles</li>
+    <li><strong><code>.md</code></strong>: Formatted Markdown with executive summaries, blockquoted patent claims, prior art matrices, and clean bullet lists (no raw JSON braces or brackets)</li>
+    <li><strong><code>.pdf</code></strong>: Publication-ready PDF generated directly from Document View layout with formal hierarchy and page margins</li>
+    <li><strong><code>.docx</code></strong>: Microsoft Word document generated using native headings, bullet lists, and quote block styles</li>
   </ul>
 </section>
 
@@ -613,7 +614,7 @@
     <li><strong>Gate Panel</strong>: Accept &amp; Advance, Refine (Edit textarea), Feedback (input), Rerun, Cumulative view, Save &amp; Exit</li>
     <li><strong>Resume Modal</strong>: Lists all saved sessions with provider badge, user input, completed phases count, next phase, model</li>
     <li><strong>Reference Panel</strong>: Checkbox list of completed phases to inject as context into the next phase run</li>
-    <li><strong>Cumulative Modal</strong>: Modal showing compiled cumulative multi-phase output, line indexing, copy button, and 1-click <code>Export Dossier: [.pdf] [.docx] [.md]</code> actions</li>
+    <li><strong>Cumulative Modal</strong>: Modal showing compiled cumulative multi-phase output in Document View by default with collapsible phase cards, toggle to Raw JSON, and 1-click <code>Export: [.pdf] [.docx] [.md]</code> actions</li>
   </ul>
 
   <h3>State Management</h3>
